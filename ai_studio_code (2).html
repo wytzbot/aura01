@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AURA AI | Cognitive Excellence</title>
+  <style>
+    /* --------------------------------------------------
+       1. VARIABLES, RESET & CUSTOM SCROLLBAR
+       -------------------------------------------------- */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #09090b 0%, #1c0a00 50%, #000000 100%);
+      --accent-color: #ff6200;
+      --accent-glow: #ff770044;
+      --accent-hover: #ff7c1f;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-glow: rgba(255, 98, 0, 0.1);
+      --sidebar-width: 290px;
+      --topbar-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.01); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+    /* --------------------------------------------------
+       2. CANVAS PARTICLES & LAYOUT SYSTEM
+       -------------------------------------------------- */
+    #particle-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: none !important;
+      z-index: 1; opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.98);
+    }
+
+    .screen.active {
+      display: flex !important;
+      flex-direction: column;
+      opacity: 1;
+      transform: scale(1);
+      z-index: 2;
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-color), #ff3c00);
+      color: white; border: none; padding: 14px 28px; font-size: 1rem;
+      font-weight: 600; border-radius: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      box-shadow: 0 4px 15px var(--accent-glow); transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 98, 0, 0.4); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: transparent; color: var(--text-main); border: 1px solid var(--glass-border);
+      padding: 12px 24px; font-size: 0.95rem; font-weight: 500; border-radius: 12px;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+
+    /* --------------------------------------------------
+       3. WELCOME SCREEN
+       -------------------------------------------------- */
+    #welcome-screen { justify-content: center; align-items: center; text-align: center; padding: 24px; }
+    .welcome-container { max-width: 480px; padding: 40px 30px; width: 100%; }
+    .aura-logo-large {
+      font-size: 3rem; font-weight: 900; letter-spacing: 4px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-color) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+    .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 30px; }
+    .ads-disclaimer { font-size: 0.75rem; color: var(--accent-color); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; opacity: 0.8; }
+
+    /* --------------------------------------------------
+       4. AUTH SCREEN
+       -------------------------------------------------- */
+    #auth-screen { justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+    .auth-container { width: 100%; max-width: 420px; padding: 30px 24px; }
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; }
+    .auth-tab { flex: 1; text-align: center; padding: 10px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+    .auth-tab.active { color: var(--accent-color); border-bottom: 2px solid var(--accent-color); }
+    .auth-form { display: none; flex-direction: column; gap: 16px; }
+    .auth-form.active { display: flex; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    .input-control {
+      width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border);
+      border-radius: 10px; padding: 12px 16px; color: var(--text-main); font-size: 0.95rem;
+      outline: none; transition: all 0.2s;
+    }
+    .input-control:focus { border-color: var(--accent-color); box-shadow: 0 0 8px rgba(255, 98, 0, 0.25); }
+    .password-toggle { position: absolute; right: 14px; cursor: pointer; color: var(--text-muted); user-select: none; }
+    .forgot-link { font-size: 0.8rem; color: var(--accent-color); text-align: right; cursor: pointer; text-decoration: none; margin-top: -8px; }
+    .divider { display: flex; align-items: center; text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 16px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--glass-border); }
+    .divider:not(:empty)::before { margin-right: .5em; }
+    .divider:not(:empty)::after { margin-left: .5em; }
+    .btn-google { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-main); padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s; }
+
+    /* --------------------------------------------------
+       5. MAIN CHAT PAGE
+       -------------------------------------------------- */
+    #chat-screen { height: 100vh; overflow: hidden; flex-direction: row; }
+    .sidebar {
+      position: fixed; top: 0; left: calc(-1 * var(--sidebar-width)); width: var(--sidebar-width);
+      height: 100%; background: rgba(10, 10, 12, 0.95); backdrop-filter: blur(20px);
+      border-right: 1px solid var(--glass-border); z-index: 100; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column;
+    }
+    .sidebar.open { transform: translateX(var(--sidebar-width)); }
+    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 99; display: none; }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 12px; }
+    .sidebar-user { display: flex; align-items: center; justify-content: space-between; }
+    .user-info { display: flex; align-items: center; gap: 8px; }
+    .user-avatar { width: 36px; height: 36px; background: var(--accent-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .user-name-text { font-weight: 600; font-size: 0.9rem; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-signout { cursor: pointer; color: var(--text-muted); border: none; background: none; padding: 6px; }
+    .sidebar-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .history-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item { padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); cursor: pointer; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+    .history-item.active { background: var(--glass-glow); border-color: var(--accent-color); }
+    .history-delete-btn { color: var(--text-muted); padding: 2px 6px; cursor: pointer; }
+
+    .main-chat-container { flex: 1; height: 100%; display: flex; flex-direction: column; position: relative; }
+    .top-bar { height: var(--topbar-height); border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(10px); z-index: 10; }
+    .app-logo { font-size: 1.4rem; font-weight: 800; color: white; letter-spacing: 1.5px; }
+    .app-logo span { color: var(--accent-color); }
+    .premium-badge { background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+
+    .chat-view-wrapper { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; position: relative; }
+    .hero-container { margin: auto; text-align: center; max-width: 500px; }
+    .welcome-user-headline { font-size: 1.6rem; font-weight: 800; line-height: 1.3; margin-bottom: 24px; background: linear-gradient(135deg, #ffffff, var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+    .chips-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .suggestion-chip { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; text-align: left; cursor: pointer; }
+    .suggestion-chip:hover { border-color: var(--accent-color); background: var(--glass-glow); }
+
+    .messages-container { display: flex; flex-direction: column; gap: 20px; max-width: 800px; width: 100%; margin: 0 auto; }
+    .message-bubble { display: flex; flex-direction: column; gap: 8px; max-width: 85%; animation: bubbleIn 0.3s ease forwards; }
+    .message-bubble.user { align-self: flex-end; }
+    .message-bubble.ai { align-self: flex-start; }
+    .bubble-content { padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
+    .message-bubble.user .bubble-content { background: var(--accent-color); color: white; border-bottom-right-radius: 4px; }
+    .message-bubble.ai .bubble-content { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); border-bottom-left-radius: 4px; }
+
+    .input-bar-container { padding: 16px; background: linear-gradient(180deg, transparent 0%, #000 100%); }
+    .input-bar-wrapper { max-width: 800px; margin: 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 24px; background: rgba(18, 18, 20, 0.9); border: 1px solid var(--glass-border); position: relative; }
+    .chat-textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text-main); font-size: 0.95rem; resize: none; max-height: 120px; height: 24px; line-height: 24px; }
+
+    /* Modals */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-content { width: 100%; max-width: 400px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+    .toast-container { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #111; border: 1px solid var(--accent-color); padding: 10px 20px; border-radius: 8px; opacity: 0; transition: 0.3s; z-index: 9999; }
+    .toast-container.active { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @keyframes bubbleIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <canvas id="particle-canvas"></canvas>
+  <div id="toast" class="toast-container"></div>
+
+  <!-- Welcome Screen -->
+  <div id="welcome-screen" class="screen active">
+    <div class="welcome-container glass-card">
+      <div class="aura-logo-large">AURA AI</div>
+      <p class="subtitle">Experience cognitive excellence at lightspeed.</p>
+      <div class="ads-disclaimer">Secure Cloud Syncing Enabled</div>
+      <button id="start-btn" class="btn-primary" style="width: 100%;">ENTER AURA</button>
+    </div>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="screen">
+    <div class="auth-container glass-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login">SIGN IN</div>
+        <div class="auth-tab" id="tab-signup">SIGN UP</div>
+      </div>
+      <form id="login-form" class="auth-form active">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" class="input-control" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="login-password" class="input-control" required>
+          </div>
+        </div>
+        <div class="forgot-link" id="trigger-forgot-modal">Forgot password?</div>
+        <button type="submit" class="btn-primary">SIGN IN</button>
+      </form>
+      <form id="signup-form" class="auth-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signup-name" class="input-control" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="signup-email" class="input-control" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signup-password" class="input-control" required minlength="6">
+        </div>
+        <button type="submit" class="btn-primary">CREATE ACCOUNT</button>
+      </form>
+      <div class="divider">OR</div>
+      <button class="btn-google" id="btn-google-signin">Continue with Google</button>
+    </div>
+  </div>
+
+  <!-- Main Chat Page -->
+  <div id="chat-screen" class="screen">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-user">
+          <div class="user-info">
+            <div class="user-avatar" id="user-avatar-char">U</div>
+            <span class="user-name-text" id="user-display-name">User</span>
+          </div>
+          <button class="btn-signout" id="btn-logout">Logout</button>
+        </div>
+        <button class="btn-primary" id="btn-new-chat" style="padding: 10px; font-size: 0.8rem;">+ New Chat</button>
+      </div>
+      <div class="sidebar-body">
+        <div class="history-label">Recent Intelligence</div>
+        <div class="history-list" id="sidebar-history-list"></div>
+      </div>
+    </aside>
+
+    <div class="main-chat-container">
+      <header class="top-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div id="btn-menu-toggle" style="cursor:pointer">☰</div>
+          <div class="app-logo">AURA<span>AI</span></div>
+        </div>
+        <div class="premium-badge">PREMIUM</div>
+      </header>
+
+      <div class="chat-view-wrapper" id="chat-scroller">
+        <div class="hero-container" id="chat-hero">
+          <h2 class="welcome-user-headline">READY TO EXPLORE?</h2>
+          <div class="chips-container">
+            <div class="suggestion-chip" onclick="applySuggestion('Analyze Code', 'Review this logic for efficiency')">
+                <b>Analyze Code</b><br><small>Efficiency check</small>
+            </div>
+            <div class="suggestion-chip" onclick="applySuggestion('Creative Writing', 'Start a sci-fi novel')">
+                <b>Creative Writing</b><br><small>Start a novel</small>
+            </div>
+          </div>
+        </div>
+        <div class="messages-container" id="messages-wrapper" style="display:none"></div>
+      </div>
+
+      <footer class="input-bar-container">
+        <div class="input-bar-wrapper">
+          <input type="file" id="file-input" hidden accept="image/*">
+          <button class="btn-attachment" id="btn-attach" title="Attach Image">📎</button>
+          <textarea id="chat-input" class="chat-textarea" placeholder="Send message..."></textarea>
+          <button id="btn-send-message" class="btn-primary" style="padding:8px 15px; border-radius:20px">Send</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modal-forgot">
+    <div class="modal-content glass-card">
+      <h3>Reset Password</h3>
+      <p style="font-size: 0.8rem; color: #aaa">Enter email to receive a recovery link.</p>
+      <input type="email" id="forgot-email" class="input-control" placeholder="Email">
+      <button class="btn-primary" id="btn-send-reset">Send Link</button>
+      <button class="btn-secondary" onclick="document.getElementById('modal-forgot').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, query, orderBy, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // --- CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+      authDomain: "my-wyticle-id.firebaseapp.com",
+      projectId: "my-wyticle-id",
+      storageBucket: "my-wyticle-id.firebasestorage.app",
+      messagingSenderId: "634169882815",
+      appId: "1:634169882815:web:486d39a13ce2f855c0ae0a"
+    };
+
+    const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"; // Replace with your key
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let activeChatId = null;
+    let currentBase64Image = null;
+
+    // --- UI HELPERS ---
+    const showToast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('active');
+      setTimeout(() => t.classList.remove('active'), 3000);
+    };
+
+    const navigateTo = (screenId) => {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId + '-screen').classList.add('active');
+    };
+
+    window.applySuggestion = (title, prompt) => {
+        const input = document.getElementById('chat-input');
+        input.value = prompt;
+        input.focus();
+    };
+
+    // --- AUTH LOGIC ---
+    document.getElementById('start-btn').onclick = () => navigateTo('auth');
+    document.getElementById('tab-login').onclick = () => {
+        document.getElementById('tab-login').classList.add('active');
+        document.getElementById('tab-signup').classList.remove('active');
+        document.getElementById('login-form').classList.add('active');
+        document.getElementById('signup-form').classList.remove('active');
+    };
+    document.getElementById('tab-signup').onclick = () => {
+        document.getElementById('tab-signup').classList.add('active');
+        document.getElementById('tab-login').classList.remove('active');
+        document.getElementById('signup-form').classList.add('active');
+        document.getElementById('login-form').classList.remove('active');
+    };
+
+    document.getElementById('login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-password').value;
+        try { await signInWithEmailAndPassword(auth, email, pass); } catch(e) { showToast(e.message); }
+    };
+
+    document.getElementById('signup-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const pass = document.getElementById('signup-password').value;
+        try {
+            const res = await createUserWithEmailAndPassword(auth, email, pass);
+            await updateProfile(res.user, { displayName: name });
+            await setDoc(doc(db, "users", res.user.uid), { name, email, uid: res.user.uid });
+        } catch(e) { showToast(e.message); }
+    };
+
+    document.getElementById('btn-google-signin').onclick = async () => {
+        try { await signInWithPopup(auth, provider); } catch(e) { showToast(e.message); }
+    };
+
+    document.getElementById('trigger-forgot-modal').onclick = () => document.getElementById('modal-forgot').style.display = 'flex';
+    document.getElementById('btn-send-reset').onclick = async () => {
+        const email = document.getElementById('forgot-email').value;
+        if(!email) return showToast("Enter email");
+        try { 
+            await sendPasswordResetEmail(auth, email); 
+            showToast("Reset link sent!"); 
+            document.getElementById('modal-forgot').style.display = 'none';
+        } catch(e) { showToast(e.message); }
+    };
+
+    onAuthStateChanged(auth, user => {
+        currentUser = user;
+        if(user) {
+            document.getElementById('user-display-name').textContent = user.displayName || "Explorer";
+            document.getElementById('user-avatar-char').textContent = (user.displayName || "E")[0];
+            navigateTo('chat');
+            loadHistory();
+        } else {
+            navigateTo('welcome');
+        }
+    });
+
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+    // --- CHAT LOGIC ---
+    async function loadHistory() {
+        const q = query(collection(db, "users", currentUser.uid, "chats"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        const list = document.getElementById('sidebar-history-list');
+        list.innerHTML = '';
+        snap.forEach(d => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `<span>${d.data().title}</span><div class="history-delete-btn" onclick="window.delChat('${d.id}')">×</div>`;
+            item.onclick = () => openChat(d.id);
+            list.appendChild(item);
+        });
+    }
+
+    window.delChat = async (id) => {
+        await deleteDoc(doc(db, "users", currentUser.uid, "chats", id));
+        loadHistory();
+    };
+
+    document.getElementById('btn-new-chat').onclick = () => {
+        activeChatId = null;
+        document.getElementById('chat-hero').style.display = 'block';
+        document.getElementById('messages-wrapper').style.display = 'none';
+        document.getElementById('messages-wrapper').innerHTML = '';
+        document.getElementById('sidebar').classList.remove('open');
+    };
+
+    async function openChat(id) {
+        activeChatId = id;
+        document.getElementById('chat-hero').style.display = 'none';
+        document.getElementById('messages-wrapper').style.display = 'flex';
+        document.getElementById('sidebar').classList.remove('open');
+        const snap = await getDocs(query(collection(db, "users", currentUser.uid, "chats", id, "messages"), orderBy("createdAt", "asc")));
+        const wrap = document.getElementById('messages-wrapper');
+        wrap.innerHTML = '';
+        snap.forEach(d => appendBubble(d.data().role === 'user' ? 'user' : 'ai', d.data().content));
+    }
+
+    function appendBubble(role, content) {
+        const wrap = document.getElementById('messages-wrapper');
+        const b = document.createElement('div');
+        b.className = `message-bubble ${role}`;
+        b.innerHTML = `<div class="bubble-content">${content}</div>`;
+        wrap.appendChild(b);
+        document.getElementById('chat-scroller').scrollTop = document.getElementById('chat-scroller').scrollHeight;
+        return b;
+    }
+
+    // Attachment Pipeline
+    document.getElementById('btn-attach').onclick = () => document.getElementById('file-input').click();
+    document.getElementById('file-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            currentBase64Image = reader.result.split(',')[1];
+            showToast("Image attached. Send message to analyze.");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    document.getElementById('btn-send-message').onclick = sendMessage;
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if(!text && !currentBase64Image) return;
+
+        input.value = '';
+        document.getElementById('chat-hero').style.display = 'none';
+        document.getElementById('messages-wrapper').style.display = 'flex';
+
+        if(!activeChatId) {
+            const chatRef = await addDoc(collection(db, "users", currentUser.uid, "chats"), {
+                title: text.substring(0, 20) || "Image Analysis",
+                createdAt: serverTimestamp()
+            });
+            activeChatId = chatRef.id;
+            loadHistory();
+        }
+
+        appendBubble('user', text + (currentBase64Image ? "\n[Image Attached]" : ""));
+        await addDoc(collection(db, "users", currentUser.uid, "chats", activeChatId, "messages"), {
+            role: 'user', content: text, createdAt: serverTimestamp()
+        });
+
+        const aiBubble = appendBubble('ai', '...');
+        
+        try {
+            const parts = [{ text: text }];
+            if(currentBase64Image) {
+                parts.push({ inline_data: { mime_type: "image/jpeg", data: currentBase64Image } });
+            }
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts }] })
+            });
+            
+            const data = await res.json();
+            const aiText = data.candidates[0].content.parts[0].text;
+            
+            aiBubble.querySelector('.bubble-content').textContent = aiText;
+            await addDoc(collection(db, "users", currentUser.uid, "chats", activeChatId, "messages"), {
+                role: 'ai', content: aiText, createdAt: serverTimestamp()
+            });
+        } catch(e) {
+            aiBubble.querySelector('.bubble-content').textContent = "Connection reset. Please check your API key.";
+        }
+        currentBase64Image = null;
+    }
+
+    // Sidebar Toggle
+    document.getElementById('btn-menu-toggle').onclick = () => document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').onclick = () => document.getElementById('sidebar').classList.remove('open');
+
+    // Canvas Particles
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let pts = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.onresize = resize; resize();
+    class P {
+        constructor() { this.init(); }
+        init() {
+            this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height;
+            this.vx = (Math.random()-0.5)*0.5; this.vy = (Math.random()-0.5)*0.5;
+            this.s = Math.random()*2;
+        }
+        draw() {
+            this.x+=this.vx; this.y+=this.vy;
+            if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height) this.init();
+            ctx.fillStyle = '#ff620066'; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill();
+        }
+    }
+    for(let i=0; i<50; i++) pts.push(new P());
+    function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); pts.forEach(p=>p.draw()); requestAnimationFrame(anim); }
+    anim();
+  </script>
+</body>
+</html>
