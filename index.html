@@ -1688,13 +1688,13 @@
         const currentThread = Array.from(elements.messagesWrapper.querySelectorAll('.message-bubble')).map(bubble => {
           const isUser = bubble.classList.contains('user');
           const content = bubble.querySelector('.bubble-content').textContent;
-          return { role: isUser ? 'user' : 'assistant', content: content };
+          return { role: isUser ? 'user' : 'model', content: content }; // Gemini uses 'model' not 'assistant'
         }).filter(m => m.content !== 'Thinking...');
 
-        const response = await fetch('https://aura01-fawn.vercel.app/api/environment', {
+        const response = await fetch('https://aura01-fawn.vercel.app/api/gemini', { // <-- CHANGED URL
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, history: currentThread })
+          body: JSON.stringify({ message: text, history: currentThread }) // <-- THIS GOES HERE
         });
 
         if (!response.ok) throw new Error("AURA Core API Offline.");
@@ -1706,12 +1706,11 @@
         await saveMessageToFirestore(activeChatId, 'ai', outputText);
         scrollToBottom();
       } catch (err) {
-        const fallbackText = "I am processing that prompt. Note: Backend API connection simulated. Please setup your endpoint.";
+        const fallbackText = "Error: " + err.message; // Better error now
         const placeholderBubble = document.getElementById(placeholderId);
         if (placeholderBubble) { placeholderBubble.querySelector('.bubble-content').textContent = fallbackText; }
         await saveMessageToFirestore(activeChatId, 'ai', fallbackText);
         scrollToBottom();
-      }
     }
 
     function appendBubbleToUI(sender, text) {
