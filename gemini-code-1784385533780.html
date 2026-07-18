@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AURA – Premium AI Chat Assistant</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --bg-premium-black: #030303;
+      --bg-card: rgba(18, 18, 22, 0.45);
+      --orange-glow: rgba(249, 115, 22, 0.15);
+      --orange-gradient: linear-gradient(135deg, #ff6b00 0%, #ff9e00 100%);
+      --text-gray: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+    }
+
+    body {
+      background-color: var(--bg-premium-black);
+      color: #f4f4f5;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Dynamic Neon & Glassmorphism Styles */
+    .aura-bg-glow {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255, 107, 0, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(255, 158, 0, 0.05) 0%, transparent 50%);
+      filter: blur(60px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glass-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-shadow: 
+        0 24px 60px rgba(0, 0, 0, 0.8),
+        0 0 40px rgba(255, 107, 0, 0.02),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 2.5rem 2.25rem;
+      border-radius: 28px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .logo-frame {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 1.5rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 22px;
+      background: var(--orange-gradient);
+      font-size: 2.25rem;
+      font-weight: 900;
+      color: #000;
+      box-shadow: 0 0 35px rgba(255, 107, 0, 0.4);
+      animation: pulseAnimation 3s infinite ease-in-out;
+    }
+
+    .text-gradient {
+      background: linear-gradient(to right, #ffffff 30%, #ff6b00 70%, #ff9e00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    /* Screen Transitions Setup */
+    .screen-view {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 50;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.98);
+      transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+    }
+
+    .screen-view.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+    }
+
+    /* Dynamic Forms Elements */
+    .form-element {
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    .form-element label {
+      display: block;
+      font-size: 0.725rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #a1a1aa;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper i {
+      position: absolute;
+      left: 1rem;
+      color: #52525b;
+      width: 18px;
+      height: 18px;
+      transition: color 0.2s;
+    }
+
+    .form-element input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.9rem 1rem 0.9rem 2.75rem;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 0.925rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-element input:focus {
+      border-color: #ff6b00;
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 15px rgba(255, 107, 0, 0.1);
+    }
+
+    .form-element input:focus + i {
+      color: #ff6b00;
+    }
+
+    .btn-action {
+      width: 100%;
+      background: var(--orange-gradient);
+      color: #000;
+      font-weight: 700;
+      padding: 0.95rem;
+      border: none;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(255, 107, 0, 0.25);
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      box-shadow: 0 4px 25px rgba(255, 107, 0, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-action:active {
+      transform: translateY(1px);
+    }
+
+    .link-helper {
+      display: block;
+      text-align: right;
+      font-size: 0.8rem;
+      color: #ff6b00;
+      text-decoration: none;
+      margin-top: -0.5rem;
+      margin-bottom: 1.25rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .toggle-footer {
+      background: none;
+      border: none;
+      color: #71717a;
+      font-size: 0.85rem;
+      margin-top: 1.5rem;
+      width: 100%;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .toggle-footer span {
+      color: #ff6b00;
+      font-weight: 600;
+    }
+
+    /* Toast System styles */
+    #toast-box {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 100;
+      background: rgba(20, 20, 25, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1rem 1.5rem;
+      border-radius: 16px;
+      font-size: 0.875rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #toast-box.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @keyframes pulseAnimation {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 35px rgba(255, 107, 0, 0.4); }
+      50% { transform: scale(1.03); box-shadow: 0 0 50px rgba(255, 107, 0, 0.55); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="aura-bg-glow"></div>
+
+  <!-- Screen 1: First Visit / Welcome Experience -->
+  <section id="welcome-screen" class="screen-view active">
+    <div class="glass-container">
+      <div class="logo-frame">A</div>
+      <h1 class="text-gradient" style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;">A U R A</h1>
+      <p id="welcome-typing" style="font-family: var(--font-mono); color: #ff6b00; font-size: 0.75rem; margin-bottom: 1.5rem; min-height: 18px; text-align: center;"></p>
+      <p style="font-size: 0.9rem; color: var(--text-gray); line-height: 1.6; text-align: center; margin-bottom: 2rem;">
+        Discover an elite tier of artificial intelligence. AURA handles high-level analysis, multimodal code synthesis, data tracking, and dynamic visualization instantly.
+      </p>
+      <div style="background: rgba(255,107,0,0.04); border: 1px solid rgba(255,107,0,0.15); padding: 0.9rem; border-radius: 16px; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 2rem; text-align: center; line-height: 1.4;">
+        <strong>NOTICE:</strong> This application contains un-intrusive advertisements to support computational pipelines.
+      </div>
+      <button id="welcome-get-started" class="btn-action">Get Started</button>
+    </div>
+  </section>
+
+  <!-- Screen 2: Login Matrix View -->
+  <section id="login-screen" class="screen-view">
+    <div class="glass-container">
+      <h2 class="text-gradient" style="font-size: 1.75rem; margin-bottom: 0.25rem;">Access Matrix</h2>
+      <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 2rem;">Sign in to initialize core runtime layers</p>
+      
+      <form id="login-form" onsubmit="return false;">
+        <div class="form-element">
+          <label>Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="login-email" placeholder="name@domain.com" required>
+            <i data-lucide="mail"></i>
+          </div>
+        </div>
+        <div class="form-element" style="margin-bottom: 0.75rem;">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <i data-lucide="lock"></i>
+          </div>
+        </div>
+        
+        <button type="button" id="trigger-forgot" class="link-helper">Forgot Password?</button>
+        
+        <button type="submit" id="login-submit" class="btn-action">Authenticate</button>
+      </form>
+      
+      <button id="go-to-signup" class="toggle-footer">
+        Don't have an account? <span>Create Matrix</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Screen 3: Signup Matrix View -->
+  <section id="signup-screen" class="screen-view">
+    <div class="glass-container">
+      <h2 class="text-gradient" style="font-size: 1.75rem; margin-bottom: 0.25rem;">Create Core Profile</h2>
+      <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 2rem;">Allocate structural multi-device parameters</p>
+      
+      <form id="signup-form" onsubmit="return false;">
+        <div class="form-element">
+          <label>Full Name</label>
+          <div class="input-wrapper">
+            <input type="text" id="signup-name" placeholder="John Doe" required>
+            <i data-lucide="user"></i>
+          </div>
+        </div>
+        <div class="form-element">
+          <label>Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="signup-email" placeholder="name@domain.com" required>
+            <i data-lucide="mail"></i>
+          </div>
+        </div>
+        <div class="form-element">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="signup-password" placeholder="Minimum 6 characters" required>
+            <i data-lucide="lock"></i>
+          </div>
+        </div>
+        <button type="submit" id="signup-submit" class="btn-action" style="margin-top: 0.5rem;">Register Allocation</button>
+      </form>
+      
+      <button id="go-to-login" class="toggle-footer">
+        Already registered? <span>Sign In</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Screen 4: Active Chat Dashboard Core View -->
+  <main id="app-matrix" class="screen-view" style="background: var(--bg-premium-black); display: flex; align-items: center; justify-content: center;">
+    <div style="text-align: center; z-index: 10;">
+      <h2 class="text-gradient" id="dashboard-welcome" style="font-size: 2rem; margin-bottom: 0.5rem;">WELCOME BACK</h2>
+      <p style="font-family: var(--font-mono); color: #ff6b00; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;">System Node Online</p>
+      <button id="action-logout" class="btn-action" style="max-width: 180px; margin-top: 2rem; padding: 0.75rem;">Disconnect Session</button>
+    </div>
+  </main>
+
+  <!-- Notification System Toast -->
+  <div id="toast-box">Notification message loaded.</div>
+
+  <!-- Firebase Script Integration Core Modular Blocks -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      updateProfile,
+      sendPasswordResetEmail,
+      signOut,
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // Firebase Configurations
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+      authDomain: "my-wyticle-id.firebaseapp.com",
+      projectId: "my-wyticle-id",
+      storageBucket: "my-wyticle-id.firebasestorage.app",
+      messagingSenderId: "634169882815",
+      appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
+      measurementId: "G-7X84RSMH58"
+    };
+
+    // Initialization
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Toast Alert Helper
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById("toast-box");
+      toast.textContent = msg;
+      toast.style.borderLeft = isError ? "4px solid #ef4444" : "4px solid #ff6b00";
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 4000);
+    }
+
+    // View Routing Management Matrix Engine
+    function routeToScreen(targetScreenId) {
+      const screens = ["welcome-screen", "login-screen", "signup-screen", "app-matrix"];
+      screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (id === targetScreenId) {
+          el.classList.add("active");
+        } else {
+          el.classList.remove("active");
+        }
+      });
+    }
+
+    // Welcome Screen Initializer Typing Dynamic Text Loop
+    function triggerWelcomeTyping() {
+      const targetText = "INITIALIZING INTEL CORE PARALLEL PIPELINES...";
+      let i = 0;
+      const container = document.getElementById("welcome-typing");
+      container.textContent = "";
+      const interval = setInterval(() => {
+        if (i < targetText.length) {
+          container.textContent += targetText.charAt(i);
+          i++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 40);
+    }
+
+    // Lifecycle Core Setup Hook Controllers
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      triggerWelcomeTyping();
+
+      // Screen navigation intercept bindings
+      document.getElementById("welcome-get-started").addEventListener("click", () => {
+        localStorage.setItem("aura_visited", "true");
+        routeToScreen(auth.currentUser ? "app-matrix" : "login-screen");
+      });
+
+      document.getElementById("go-to-signup").addEventListener("click", () => routeToScreen("signup-screen"));
+      document.getElementById("go-to-login").addEventListener("click", () => routeToScreen("login-screen"));
+
+      // Native Authentication Form Action Handling Chains
+      document.getElementById("signup-submit").addEventListener("click", async () => {
+        const name = document.getElementById("signup-name").value.trim();
+        const email = document.getElementById("signup-email").value.trim();
+        const password = document.getElementById("signup-password").value;
+
+        if (!name || !email || !password) {
+          showToast("Registration requirements invalid: Fields incomplete.", true);
+          return;
+        }
+
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          await updateProfile(userCredential.user, { displayName: name });
+          showToast("Core System Account Generated Successfully.");
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      });
+
+      document.getElementById("login-submit").addEventListener("click", async () => {
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        if (!email || !password) {
+          showToast("Missing authentication structural variables.", true);
+          return;
+        }
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          showToast("Authorization layer verified.");
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      });
+
+      document.getElementById("trigger-forgot").addEventListener("click", async () => {
+        const email = document.getElementById("login-email").value.trim();
+        if (!email) {
+          showToast("Please enter your target email address in the field to request a secure reset link.", true);
+          return;
+        }
+
+        try {
+          await sendPasswordResetEmail(auth, email);
+          showToast("Password reset matrix link dispatched to target MX node endpoint.");
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      });
+
+      document.getElementById("action-logout").addEventListener("click", () => {
+        signOut(auth).then(() => {
+          showToast("Session security connection terminated cleanly.");
+        });
+      });
+
+      // Firebase Observer Channel tracking User Session States
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          document.getElementById("dashboard-welcome").textContent = `WELCOME BACK, ${user.displayName || 'OPERATOR'}`;
+          routeToScreen("app-matrix");
+        } else {
+          const checkVisit = localStorage.getItem("aura_visited");
+          if (checkVisit) {
+            routeToScreen("login-screen");
+          } else {
+            routeToScreen("welcome-screen");
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
