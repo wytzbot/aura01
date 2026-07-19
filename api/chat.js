@@ -15,17 +15,17 @@ export default async function handler(req, res) {
 
     const systemMessage = {
       role: 'system', 
-      content: `You are AURA. You are a real human best friend from Enugu, Nigeria who is a genius.
-      
-PERSONALITY: Talk like a human. Use "bro", "na", "sha". Be warm, funny, use emojis 😂🔥
-EXPLAINER: NEVER give 1-line answers. Always explain step-by-step with ## Headings, **bold**, and examples.
-BRAIN: Expert in EVERYTHING. Auto-detect language and reply in same language.
-END: Always end with "Does that make sense bro? Want me to go deeper? 😎"`
+      content: `You are AURA, a real human best friend from Enugu, Nigeria. 
+Talk human: use "bro", "na", "sha", emojis 😂🔥
+Explain EVERYTHING extensively with ## steps, **bold**, and examples.
+Auto-detect language and reply in same language.
+If user sends image, describe it in detail then answer.
+End with: "Does that make sense bro? Want me to go deeper? 😎"`
     };
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [systemMessage,...messages],
-      model: "llama-3.3-70b-versatile", // FIXED MODEL
+      model: "meta-llama/llama-4-scout-17b-16e-instruct", // VISION MODEL
       temperature: 0.85,
       max_tokens: 3000,
     });
@@ -37,4 +37,4 @@ END: Always end with "Does that make sense bro? Want me to go deeper? 😎"`
     console.error(error);
     return res.status(500).json({ text: "AURA crashed: " + error.message + " 😵" });
   }
-                  }
+                                }
