@@ -7,69 +7,48 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
-
 <style>
   html, body { height: 100%; background: #020202; color: #e5e5e5; overflow: hidden; margin:0; }
 .aura-orange { color: #FF7A00; }
 .bubble { max-width: 85%; padding: 12px; border-radius: 12px; word-wrap: break-word; }
 .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
 .bubble-ai { background: #111; margin-right: auto; }
-.prose h1 { font-size: 1.4rem; font-weight: 800; margin: .8rem 0; }
+.prose h1 { font-size: 1.4rem; font-weight: 800; margin:.8rem 0; }
 .prose h2 { font-size: 1.1rem; font-weight: 700; margin:.6rem 0; }
 .prose a { color: #22c55e; text-decoration: underline; }
 .prose img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 1rem 0; position: relative; }
 .code-block button { position: absolute; top: 8px; right: 8px; }
-  #chat { height: calc(100dvh - 150px); padding-bottom: 80px; }
+  #chat { height: calc(100dvh - 150px); }
   #inputBar { position: fixed; bottom: 0; left: 0; right: 0; background:#020202; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 .bounce { animation: bounce 2s infinite; }
 .hidden { display: none!important; }
-.icon-btn { padding: 8px; border-radius: 8px; } .icon-btn:active { background:#222; }
+.icon-btn { padding: 8px; border-radius: 8px; }
 </style>
 </head>
 <body>
 
-<!-- WELCOME -->
 <div id="welcome" class="h-screen flex-col items-center justify-center p-6 text-center">
   <h1 class="text-5xl font-bold aura-orange bounce mb-4">AURA</h1>
-  <p class="text-gray-400 mb-8">Your AI Assistant. Fast. Human. Free.</p>
-  <div class="grid grid-cols-2 gap-3 mb-8 w-full max-w-sm">
-    <div class="bg-[#111] p-3 rounded-lg bounce" style="animation-delay:.2s">⚡ Instant</div>
-    <div class="bg-[#111] p-3 rounded-lg bounce" style="animation-delay:.4s">🧠 Smart</div>
-    <div class="bg-[#111] p-3 rounded-lg bounce" style="animation-delay:.6s">📷 Vision</div>
-    <div class="bg-[#111] p-3 rounded-lg bounce" style="animation-delay:.8s">📎 Files</div>
-  </div>
   <button id="startBtn" class="bg-[#FF7A00] text-black font-bold py-3 px-8 rounded-lg text-lg">Start Chatting</button>
 </div>
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="hidden w-72 bg-[#0a0a0a] border-r border-[#222] p-4 flex-col h-full z-40 fixed">
-  <button id="newChatBtn" class="bg-[#FF7A00] text-black font-bold py-3 px-4 rounded-lg mb-4 w-full">+ New Chat</button>
-  <input id="search" placeholder="Search chats..." class="bg-[#111] p-3 rounded mb-4 text-sm border-[#333] w-full">
-  <div id="chatList" class="overflow-y-auto flex-1 space-y-1"></div>
-</div>
-<div id="overlay" class="hidden fixed inset-0 bg-black/60 z-30"></div>
-
-<!-- APP -->
 <div id="app" class="hidden h-screen flex-col">
-  <header class="p-3 border-b border-[#222] flex justify-between items-center flex-shrink-0">
+  <header class="p-3 border-b border-[#222] flex justify-between items-center">
     <button id="menuBtn" class="text-2xl">☰</button>
     <h1 class="text-lg font-bold aura-orange">AURA AI Pro</h1>
     <button id="plusBtn" class="text-2xl">+</button>
   </header>
-
   <div id="chat" class="overflow-y-auto p-3 space-y-3"></div>
-
-  <!-- FIXED INPUT BAR WITH ATTACH + CAMERA -->
   <div id="inputBar" class="p-2 border-t border-[#222]">
     <div id="preview" class="hidden mb-2"></div>
     <form id="form" class="flex gap-2 items-center">
       <button type="button" id="attachBtn" class="icon-btn">📎</button>
       <button type="button" id="cameraBtn" class="icon-btn">📷</button>
-      <input type="file" id="fileInput" accept="image/*" capture="environment" class="hidden">
-      <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-3 rounded-lg border border-[#333] focus:border-[#FF7A00] outline-none" placeholder="Message AURA...">
-      <button type="submit" id="sendBtn" class="bg-[#FF7A00] text-black px-4 py-3 rounded-lg font-bold">➤</button>
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-3 rounded-lg border-[#333]" placeholder="Message AURA...">
+      <button type="submit" class="bg-[#FF7A00] text-black px-4 py-3 rounded-lg font-bold">➤</button>
     </form>
   </div>
 </div>
@@ -83,78 +62,42 @@
   const db = getFirestore(app);
   let currentChatId = Date.now().toString();
   let chats = [];
-  let attachedFile = null; // for image
 
   const welcome = document.getElementById('welcome');
   const appDiv = document.getElementById('app');
   const chat = document.getElementById('chat');
   const form = document.getElementById('form');
   const input = document.getElementById('input');
-  const fileInput = document.getElementById('fileInput');
-  const preview = document.getElementById('preview');
+
+  document.getElementById('startBtn').onclick = () => { welcome.classList.add('hidden'); appDiv.classList.remove('hidden'); loadChats(); }
+  document.getElementById('menuBtn').onclick = () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
 
   marked.setOptions({ breaks: true });
   const renderer = new marked.Renderer();
   renderer.code = (code) => `<div class="code-block"><button onclick="copyCode(this)" class="text-xs aura-orange">Copy</button><pre><code>${code}</code></pre></div>`;
   marked.setOptions({ renderer });
-
   function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
 
-  // NAVIGATION
-  document.getElementById('startBtn').onclick = () => { welcome.classList.add('hidden'); appDiv.classList.remove('hidden'); history.pushState({page: 'app'}, ''); loadChats(); }
-  window.onpopstate = () => { appDiv.classList.add('hidden'); welcome.classList.remove('hidden'); }
-  document.getElementById('menuBtn').onclick = () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
-  document.getElementById('overlay').onclick = () => { sidebar.classList.add('hidden'); overlay.classList.add('hidden'); }
-  document.getElementById('newChatBtn').onclick = () => { currentChatId = Date.now().toString(); chat.innerHTML = ''; sidebar.classList.add('hidden'); overlay.classList.add('hidden'); }
-  document.getElementById('plusBtn').onclick = () => { currentChatId = Date.now().toString(); chat.innerHTML = ''; }
-
-  // ATTACH + CAMERA PIPELINE
-  document.getElementById('attachBtn').onclick = () => { fileInput.accept="*/*"; fileInput.click(); }
-  document.getElementById('cameraBtn').onclick = () => { fileInput.accept="image/*"; fileInput.capture="environment"; fileInput.click(); }
-  
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
-    attachedFile = file;
-    const url = URL.createObjectURL(file);
-    preview.innerHTML = `<div class="relative inline-block"><img src="${url}" class="h-20 rounded"><button onclick="clearFile()" class="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 text-xs">x</button></div>`;
-    preview.classList.remove('hidden');
-  }
-  window.clearFile = () => { attachedFile = null; preview.classList.add('hidden'); fileInput.value = ''; }
-
-  // CHAT - FIX: NO REFRESH
   form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // THIS STOPS REFRESH
+    e.preventDefault();
     const msg = input.value.trim();
-    if(!msg && !attachedFile) return;
-    
-    let content = msg;
-    if(attachedFile) {
-      const url = URL.createObjectURL(attachedFile);
-      content = `${msg}\n\n![Uploaded Image](${url})`;
-    }
-
-    addMessage('user', content);
+    if(!msg) return;
+    addMessage('user', msg);
     input.value = '';
-    const fileToSend = attachedFile;
-    clearFile();
-    await streamAI(content, fileToSend);
+    await streamAI(msg);
   });
 
   function addMessage(role, content) {
     const div = document.createElement('div');
     div.className = `bubble ${role === 'user'? 'bubble-user' : 'bubble-ai'}`;
     div.innerHTML = `<div class="prose">${renderMessage(content)}</div>`;
-    div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-400">
-      <button onclick="copyMsg(this)">Copy</button>
-      ${role === 'ai'? '<button onclick="redo()">Redo</button>' : '<button onclick="editMsg(this)">Edit</button>'}
-      <button onclick="delMsg(this)">Delete</button>
-    </div>`;
+    div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-400"><button onclick="copyMsg(this)">Copy</button><button onclick="redo()">Redo</button><button onclick="delMsg(this)">Delete</button></div>`;
     chat.appendChild(div);
-    setTimeout(() => chat.scrollTop = chat.scrollHeight, 100); // wait for render
+    setTimeout(() => chat.scrollTop = chat.scrollHeight, 100);
     return div;
   }
 
+  // FIXED STREAM FUNCTION
   async function streamAI(prompt) {
     const bubble = addMessage('ai', '');
     const contentDiv = bubble.querySelector('.prose');
@@ -163,14 +106,15 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 ## H2.'},
+          {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 ## H2, tables, ```code```.'},
       ...getAllMessages(), {role:'user', content: prompt}
         ]})
       });
       
+      // FIX: Don't parse JSON on error. Read as text first
       if(!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Server Error");
+        const errText = await res.text(); // read as text
+        throw new Error(`Server ${res.status}: ${errText}`);
       }
 
       const reader = res.body.getReader();
@@ -184,9 +128,11 @@
       }
       saveChat();
     } catch(err) {
-      contentDiv.innerText = "Error: " + err.message; // NOW WE SEE REAL ERROR
+      contentDiv.innerText = err.message; // Show real error
+      contentDiv.style.color = "#ef4444";
     }
-    }
+  }
+
   function getAllMessages() {
     return [...chat.children].map(b => ({
       role: b.classList.contains('bubble-user')? 'user' : 'assistant',
@@ -209,13 +155,10 @@
     ).join('');
   }
 
-  window.openChat = (id) => { currentChatId = id; const c = chats.find(x => x.id === id); chat.innerHTML = c.messages; sidebar.classList.add('hidden'); overlay.classList.add('hidden'); }
-  document.getElementById('search').oninput = (e) => { const term = e.target.value.toLowerCase(); chatList.innerHTML = chats.filter(c => c.title.toLowerCase().includes(term)).map(c => `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`).join(''); }
+  window.openChat = (id) => { currentChatId = id; const c = chats.find(x => x.id === id); chat.innerHTML = c.messages; }
   window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble').querySelector('.prose').innerText);
-  window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
   window.delMsg = (btn) => { btn.closest('.bubble').remove(); saveChat(); }
   window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
-  window.editMsg = (btn) => { const p = btn.closest('.bubble-user').querySelector('.prose'); const newText = prompt("Edit message:", p.innerText); if(newText) {p.innerText = newText; saveChat();} }
 </script>
 </body>
-  </html>
+</html>
