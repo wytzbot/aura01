@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AURA AI Pro</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
 <style>
     * { font-family: 'Inter', sans-serif; }
   html, body { height: 100%; background: #020202; color: #e5e5e5; overflow: hidden; margin:0; }
@@ -17,56 +16,44 @@
  .bubble { max-width: 85%; padding: 14px; border-radius: 16px; word-wrap: break-word; line-height: 1.6; }
  .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
  .bubble-ai { background: #111; margin-right: auto; }
- .prose h1 { font-size: 1.5rem; font-weight: 800; margin:.8rem 0; }
- .prose table { border-collapse: collapse; width:100%; margin:1rem 0; }
- .prose td,.prose th { border:1px solid #333; padding:8px; }
+ .prose a { color: #22c55e; text-decoration: underline; }
  .code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; padding: 14px; margin: 1rem 0; position: relative; }
  .code-block button { position: absolute; top: 8px; right: 8px; background:#222; padding:4px 8px; border-radius:6px; font-size:12px; }
-  #chat { height: calc(100dvh - 160px); }
+  #chat { height: calc(100dvh - 180px); }
   #inputBar { position: fixed; bottom: 0; left: 0; right: 0; background:linear-gradient(to top, #020202 70%, transparent); padding-bottom: env(safe-area-inset-bottom); }
-  @keyframes fadeIn { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
- .fade-in { animation: fadeIn.8s ease; }
  .hidden { display: none!important; }
- .send-btn { box-shadow: 0 0 20px #FF7A0040; transition:.2s; }.send-btn:active { transform: scale(.95); }
+ .send-btn { box-shadow: 0 0 20px #FF7A0040; }
   #sidebar { position: fixed; top:0; left:0; height:100%; width:280px; background:#050505; border-right:1px solid #222; z-index:50; transform:translateX(-100%); transition:.3s; }
   #sidebar.open { transform:translateX(0); }
-  #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#00000080; z-index:40; }
+  #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#00080; z-index:40; }
+ .preview-img { max-width: 100px; max-height: 100px; border-radius: 10px; border: 1px solid #FF7A00; }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR + OVERLAY -->
-<div id="sidebar" class="p-4">
-  <h2 class="text-xl font-bold aura-orange mb-4">History</h2>
-  <div id="chatList" class="space-y-2"></div>
-</div>
+<div id="sidebar" class="p-4"><h2 class="text-xl font-bold aura-orange mb-4">History</h2><div id="chatList" class="space-y-2"></div></div>
 <div id="overlay" class="hidden"></div>
 
-<!-- PRO WELCOME SCREEN -->
 <div id="welcome" class="h-screen gradient-bg flex flex-col items-center justify-center p-6 text-center">
-  <div class="fade-in">
-    <h1 class="text-6xl font-extrabold aura-orange mb-3 tracking-tight">AURA</h1>
-    <p class="text-gray-400 text-lg mb-10">Your Intelligent AI Assistant<br>Fast. Human. Powerful.</p>
-    <button id="startBtn" class="bg-[#FF7A00] hover:bg-[#ff8c1a] text-black font-bold py-4 px-10 rounded-xl text-lg shadow-lg shadow-[#FF7A0040] transition">Start Chatting</button>
-  </div>
+  <h1 class="text-6xl font-extrabold aura-orange mb-3">AURA</h1>
+  <p class="text-gray-400 mb-10">Your funny, smart AI bestie 😂</p>
+  <button id="startBtn" class="bg-[#FF7A00] text-black font-bold py-4 px-10 rounded-xl text-lg">Start Chatting</button>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden h-screen flex flex-col">
-  <header class="p-4 border-b border-[#222] flex justify-between items-center flex-shrink-0">
-    <button id="menuBtn" class="text-2xl">☰</button>
-    <h1 class="text-xl font-bold aura-orange">AURA AI</h1>
-    <button id="plusBtn" class="text-2xl">+</button>
+<div id="app" class="hidden h-screen flex-col">
+  <header class="p-4 border-b border-[#222] flex justify-between items-center">
+    <button id="menuBtn" class="text-2xl">☰</button><h1 class="text-xl font-bold aura-orange">AURA AI</h1><button id="plusBtn" class="text-2xl">+</button>
   </header>
-
   <div id="chat" class="overflow-y-auto p-4 space-y-4"></div>
 
   <div id="inputBar" class="p-3 border-t border-[#222]">
+    <div id="preview" class="hidden mb-2"></div>
     <form id="form" class="flex gap-2 items-end">
-      <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-4 rounded-2xl border border-[#333] focus:border-[#FF7A00] outline-none text-base" placeholder="Ask AURA anything...">
-      <button type="submit" class="send-btn bg-[#FF7A00] hover:bg-[#ff8c1a] text-black p-4 rounded-2xl font-bold">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
+      <button type="button" id="attachBtn" class="p-3 text-xl">📎</button>
+      <button type="button" id="cameraBtn" class="p-3 text-xl">📷</button>
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-4 rounded-2xl border-[#333] focus:border-[#FF7A00] outline-none" placeholder="Talk to me...">
+      <button type="submit" class="send-btn bg-[#FF7A00] text-black p-4 rounded-2xl">➤</button>
     </form>
   </div>
 </div>
@@ -79,66 +66,37 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   let currentChatId = Date.now().toString();
-  let chats = [];
-  let pageStack = ['welcome']; // for back button
+  let attachedFile = null;
 
   const welcome = document.getElementById('welcome');
   const appDiv = document.getElementById('app');
   const chat = document.getElementById('chat');
   const form = document.getElementById('form');
   const input = document.getElementById('input');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('overlay');
 
-  // 1. START CHAT + PUSH TO HISTORY
-  document.getElementById('startBtn').onclick = () => { 
-    welcome.classList.add('hidden'); 
-    appDiv.classList.remove('hidden'); 
-    pageStack.push('app');
-    history.pushState({page: 'app'}, '');
-    loadChats();
-  }
-
-  // 2. MENU OPEN/CLOSE + TAP TO DISAPPEAR
-  document.getElementById('menuBtn').onclick = () => { sidebar.classList.add('open'); overlay.classList.remove('hidden'); }
-  overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.add('hidden'); } // tap screen to close
-
-  // 3. PULL TO REFRESH
-  let startY = 0;
-  chat.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-  chat.addEventListener('touchend', e => {
-    if(chat.scrollTop === 0 && e.changedTouches[0].clientY - startY > 80) {
-      location.reload(); // refresh page
-    }
-  });
-
-  // 4. PHONE BACK BUTTON
-  window.addEventListener('popstate', () => {
-    pageStack.pop();
-    const prevPage = pageStack[pageStack.length - 1];
-    if(prevPage === 'welcome') {
-      appDiv.classList.add('hidden');
-      welcome.classList.remove('hidden');
-    }
-  });
-  document.getElementById('plusBtn').onclick = () => { // New Chat
-    currentChatId = Date.now().toString();
-    chat.innerHTML = '';
+  document.getElementById('startBtn').onclick = () => { welcome.classList.add('hidden'); appDiv.classList.remove('hidden'); history.pushState({page: 'app'}, ''); }
+  document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.remove('hidden'); }
+  document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.add('hidden'); }
+  document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
+  document.getElementById('cameraBtn').onclick = () => { document.getElementById('fileInput').setAttribute('capture', 'environment'); document.getElementById('fileInput').click(); }
+  document.getElementById('fileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if(file) { attachedFile = file; const reader = new FileReader(); reader.onload = (ev) => { document.getElementById('preview').innerHTML = `<img src="${ev.target.result}" class="preview-img">`; document.getElementById('preview').classList.remove('hidden'); } reader.readAsDataURL(file); }
   }
 
   marked.setOptions({ breaks: true });
   const renderer = new marked.Renderer();
-  renderer.code = (code) => `<div class="code-block"><button onclick="copyCode(this)">Copy</button><pre><code>${code}</code></pre></div>`;
+  renderer.code = (code, lang) => `<div class="code-block"><button onclick="copyCode(this)">Copy</button><pre><code>${code}</code></pre></div>`;
   marked.setOptions({ renderer });
   function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const msg = input.value.trim();
-    if(!msg) return;
-    addMessage('user', msg);
-    input.value = '';
-    await streamAI(msg);
+    if(!msg &&!attachedFile) return;
+    addMessage('user', attachedFile? `[Image] ${msg}` : msg);
+    input.value = ''; document.getElementById('preview').classList.add('hidden');
+    await streamAI(msg); attachedFile = null;
   });
 
   function addMessage(role, content) {
@@ -146,8 +104,7 @@
     div.className = `bubble ${role === 'user'? 'bubble-user' : 'bubble-ai'}`;
     div.innerHTML = `<div class="prose">${renderMessage(content)}</div>`;
     div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-400"><button onclick="copyMsg(this)">Copy</button><button onclick="redo()">Redo</button><button onclick="delMsg(this)">Delete</button></div>`;
-    chat.appendChild(div);
-    setTimeout(() => chat.scrollTop = chat.scrollHeight, 100);
+    chat.appendChild(div); setTimeout(() => chat.scrollTop = chat.scrollHeight, 100); return div;
   }
 
   async function streamAI(prompt) {
@@ -158,8 +115,8 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 ## H2, tables, ```code```.'},
-     ...getAllMessages(), {role:'user', content: prompt}
+          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant. Talk like a friend. Use slang, jokes, and emojis 😎🔥 Be warm, helpful. Use markdown: # H1 ## H2, **bold**, *italic*, tables, and \`\`code\`\`\`. Keep replies short unless asked. If you don't know, say "Bro idk but let's google it together"`},
+         ...getAllMessages(), {role:'user', content: prompt}
         ]})
       });
       if(!res.ok) throw new Error(await res.text());
@@ -172,8 +129,7 @@
         contentDiv.innerHTML = renderMessage(text);
         chat.scrollTop = chat.scrollHeight;
       }
-      saveChat();
-    } catch(err) { contentDiv.innerText = err.message; contentDiv.style.color = "#ef4444"; }
+    } catch(err) { contentDiv.innerText = "AURA crashed: " + err.message + " 😭 Check Vercel logs"; contentDiv.style.color = "#ef4444"; }
   }
 
   function getAllMessages() {
@@ -183,24 +139,8 @@
     }));
   }
 
-  async function saveChat() {
-    const title = chat.querySelector('.bubble-user.prose')?.innerText.slice(0,50) || 'New Chat';
-    await setDoc(doc(db, "chats", currentChatId), {messages: chat.innerHTML, title, updated: Date.now()});
-    loadChats();
-  }
-
-  async function loadChats() {
-    const q = query(collection(db, "chats"), orderBy("updated","desc"));
-    const snap = await getDocs(q);
-    chats = snap.docs.map(d => ({id: d.id,...d.data()}));
-    document.getElementById('chatList').innerHTML = chats.map(c =>
-      `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`
-    ).join('');
-  }
-
-  window.openChat = (id) => { currentChatId = id; const c = chats.find(x => x.id === id); chat.innerHTML = c.messages; sidebar.classList.remove('open'); overlay.classList.add('hidden'); }
   window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble').querySelector('.prose').innerText);
-  window.delMsg = (btn) => { btn.closest('.bubble').remove(); saveChat(); }
+  window.delMsg = (btn) => { btn.closest('.bubble').remove(); }
   window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
   window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
 </script>
