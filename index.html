@@ -10,74 +10,63 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
     * { font-family: 'Inter', sans-serif; }
-  body { background: #000; color: #e5e5e5; overflow: hidden; }
- .glass { background: rgba(17,17,17,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,122,0,0.2); }
+  body { background: #000; color: #e5e5e5; margin:0; padding:0; }
+  #app { height: 100vh; display: flex; flex-direction: column; } /* KEY FIX: 100vh not dvh */
+ .glass { background: rgba(17,17,17,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,122,0,0.2); }
  .aura-gradient { background: linear-gradient(135deg, #FF7A00 0%, #FF5500 100%); }
  .bubble { max-width: 85%; padding: 14px 16px; border-radius: 18px; line-height: 1.6; animation: slideUp.3s ease; }
   @keyframes slideUp { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
  .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
  .bubble-ai { background: #0f0f0f; margin-right: auto; }
  .prose a { color: #22c55e; text-decoration: underline; }
- .prose h1 { font-size: 1.4rem; font-weight: 800; margin:.8rem 0; }
- .prose h2 { font-size: 1.1rem; font-weight: 700; margin:.6rem 0; }
- .prose table { border-collapse: collapse; width:100%; margin:1rem 0; font-size: 14px; }
- .prose td,.prose th { border:1px solid #333; padding:8px; }
  .code-block { background: #020202; border: 1px solid #333; border-radius: 12px; padding: 14px; margin: 1rem 0; position: relative; }
  .code-block button { position: absolute; top: 8px; right: 8px; background:#222; padding:4px 10px; border-radius:6px; font-size:12px; }
-  #chat { height: calc(100dvh - 170px); }
- .typing-dot { width: 8px; height: 8px; background: #FF7A00; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite; }
- .typing-dot:nth-child(2) { animation-delay:.2s; }.typing-dot:nth-child(3) { animation-delay:.4s; }
-  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); }
+  #chat { flex: 1; overflow-y: auto; padding: 16px; } /* KEY FIX: flex 1 */
+  #inputBar { flex-shrink: 0; padding: 12px; background: #000; border-top: 1px solid #222; } /* KEY FIX: no fixed */
   #sidebar { position: fixed; top:0; left:0; height:100%; width:300px; background:#050505; z-index:50; transform:translateX(-100%); transition:.3s; }
   #sidebar.open { transform:translateX(0); }
   #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000c; z-index:40; }
- .preview-img { max-width: 120px; max-height: 120px; border-radius: 12px; border: 1px solid #FF7A00; }
+ .preview-img { max-width: 100px; max-height: 100px; border-radius: 12px; border: 1px solid #FF7A00; }
+ .hidden { display: none!important; }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
 <div id="sidebar" class="p-4"><h2 class="text-xl font-bold text-[#FF7A00] mb-4">History</h2><div id="chatList" class="space-y-2"></div></div>
 <div id="overlay" class="hidden"></div>
 
-<!-- MAIN APP - ONLY 1 SCREEN NOW -->
-<div id="app" class="h-screen flex flex-col">
-  
-  <!-- WELCOME / HEADER -->
-  <header id="header" class="p-4 glass flex justify-between items-center flex-shrink-0">
+<div id="app">
+  <header class="p-4 glass flex justify-between items-center flex-shrink-0">
     <button id="menuBtn" class="text-2xl">☰</button>
-    <div class="text-center">
-      <h1 class="text-xl font-extrabold text-[#FF7A00]">AURA</h1>
-      <p class="text-xs text-gray-400">AI Assistant</p>
-    </div>
+    <div class="text-center"><h1 class="text-xl font-extrabold text-[#FF7A00]">AURA</h1><p class="text-xs text-gray-400">AI Assistant</p></div>
     <button id="plusBtn" class="text-2xl">+</button>
   </header>
 
-  <!-- WELCOME CONTENT -->
-  <div id="welcomeContent" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+  <div id="welcomeContent" class="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
     <h1 class="text-5xl font-extrabold text-[#FF7A00] mb-3">Welcome to AURA</h1>
     <p class="text-gray-400 mb-8">Your funny, smart AI bestie 😎</p>
     <div class="grid grid-cols-2 gap-3 mb-8 w-full max-w-sm">
-      <div class="glass p-4 rounded-xl">⚡<br><span class="text-sm">Instant</span></div>
-      <div class="glass p-4 rounded-xl">🧠<br><span class="text-sm">Smart</span></div>
-      <div class="glass p-4 rounded-xl">📎<br><span class="text-sm">Files</span></div>
-      <div class="glass p-4 rounded-xl">💾<br><span class="text-sm">Memory</span></div>
+      <div class="glass p-4 rounded-xl border-0">⚡<br><span class="text-sm">Instant</span></div>
+      <div class="glass p-4 rounded-xl border-0">🧠<br><span class="text-sm">Smart</span></div>
+      <div class="glass p-4 rounded-xl border-0">📎<br><span class="text-sm">Files</span></div>
+      <div class="glass p-4 rounded-xl border-0">💾<br><span class="text-sm">Memory</span></div>
     </div>
     <button id="startBtn" class="aura-gradient text-black font-bold py-4 px-10 rounded-xl text-lg shadow-lg">Start Chatting</button>
   </div>
 
-  <!-- CHAT CONTENT -->
   <div id="chatContent" class="hidden flex-1 flex flex-col">
-    <div id="chat" class="overflow-y-auto p-4 space-y-4"></div>
+    <div id="chat"></div>
 
-    <div class="p-3 glass">
+    <div id="inputBar">
       <div id="preview" class="hidden mb-2"></div>
-      <form id="form" class="flex gap-2 items-end">
-        <button type="button" id="attachBtn" class="p-3 text-xl">📎</button>
-        <button type="button" id="cameraBtn" class="p-3 text-xl">📷</button>
+      <form id="form" class="flex gap-2 items-center">
+        <button type="button" id="attachBtn" class="p-3 text-2xl">📎</button>
+        <button type="button" id="cameraBtn" class="p-3 text-2xl">📷</button>
         <input type="file" id="fileInput" accept="image/*" class="hidden">
-        <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-4 rounded-2xl border-[#333] focus:border-[#FF7A00] outline-none" placeholder="Message AURA...">
-        <button type="submit" class="aura-gradient text-black p-4 rounded-2xl font-bold">➤</button>
+        <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-4 rounded-2xl border-[#333] focus:border-[#FF7A00] outline-none text-base" placeholder="Message AURA...">
+        <button type="submit" id="sendBtn" class="aura-gradient text-black p-4 rounded-2xl font-bold">
+          <svg width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
       </form>
     </div>
   </div>
@@ -92,35 +81,27 @@
   const db = getFirestore(app);
   let currentChatId = Date.now().toString();
   let attachedFile = null;
-  let chatStarted = false;
 
   const welcomeContent = document.getElementById('welcomeContent');
   const chatContent = document.getElementById('chatContent');
   const chat = document.getElementById('chat');
 
-  // FIX: NO MORE STUCK BUTTON. JUST HIDE/SHOW DIVS
   document.getElementById('startBtn').onclick = () => { 
     welcomeContent.classList.add('hidden');
     chatContent.classList.remove('hidden');
-    chatStarted = true;
     history.pushState({page: 'chat'}, '');
+    setTimeout(() => document.getElementById('input').focus(), 300); // auto focus keyboard
   }
-  document.getElementById('plusBtn').onclick = () => { // New Chat
+  document.getElementById('plusBtn').onclick = () => {
     chat.innerHTML = '';
     currentChatId = Date.now().toString();
     welcomeContent.classList.remove('hidden');
     chatContent.classList.add('hidden');
-    chatStarted = false;
   }
 
-  // MENU + PULL TO REFRESH + BACK BUTTON
   document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.remove('hidden'); }
   document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.add('hidden'); }
-  window.addEventListener('popstate', () => { if(chatStarted) document.getElementById('plusBtn').click(); })
-  let startY = 0; chat.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-  chat.addEventListener('touchend', e => { if(chat.scrollTop === 0 && e.changedTouches[0].clientY - startY > 80) location.reload(); });
-
-  // ATTACH + CAMERA
+  
   document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
   document.getElementById('cameraBtn').onclick = () => { document.getElementById('fileInput').setAttribute('capture', 'environment'); document.getElementById('fileInput').click(); }
   document.getElementById('fileInput').onchange = (e) => {
@@ -138,7 +119,7 @@
     e.preventDefault();
     const msg = document.getElementById('input').value.trim();
     if(!msg &&!attachedFile) return;
-    addMessage('user', attachedFile? `[Image] ${msg}` : msg);
+    addMessage('user', attachedFile? `[Image Attached] ${msg}` : msg);
     document.getElementById('input').value = ''; document.getElementById('preview').classList.add('hidden');
     await streamAI(msg); attachedFile = null;
   });
@@ -151,30 +132,19 @@
     chat.appendChild(div); setTimeout(() => chat.scrollTop = chat.scrollHeight, 100); return div;
   }
 
-  function showTyping() {
-    const div = document.createElement('div');
-    div.id = 'typing';
-    div.className = 'bubble bubble-ai';
-    div.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
-    chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-  }
-  function hideTyping() { document.getElementById('typing')?.remove(); }
-
   async function streamAI(prompt) {
-    showTyping();
+    const bubble = addMessage('ai', '...');
+    const contentDiv = bubble.querySelector('.prose');
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant. Talk like a friend from Nigeria. Use slang, jokes, and emojis 😎🔥 Be warm. Use markdown: # H1 ## H2, **bold**, tables, \`\`code\`\`. Keep replies short.`},
-        ...getAllMessages(), {role:'user', content: prompt}
+          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant from Nigeria. Talk like a friend. Use slang, jokes, and emojis 😎🔥 Be warm. Use markdown: # H1 ## H2, **bold**, tables, \`\`code\`\`. Keep replies short.`},
+       ...getAllMessages(), {role:'user', content: prompt}
         ]})
       });
       if(!res.ok) throw new Error(await res.text());
-      hideTyping();
-      const bubble = addMessage('ai', '');
-      const contentDiv = bubble.querySelector('.prose');
       const reader = res.body.getReader();
       let text = '';
       while(true) {
@@ -184,11 +154,11 @@
         contentDiv.innerHTML = renderMessage(text);
         chat.scrollTop = chat.scrollHeight;
       }
-    } catch(err) { hideTyping(); addMessage('ai', "AURA crashed: " + err.message + " 😭"); }
+    } catch(err) { contentDiv.innerText = "Error: " + err.message + " 😭"; contentDiv.style.color = "#ef4444"; }
   }
 
   function getAllMessages() {
-    return [...chat.children].filter(b => b.id!== 'typing').map(b => ({
+    return [...chat.children].map(b => ({
       role: b.classList.contains('bubble-user')? 'user' : 'assistant',
       content: b.querySelector('.prose').innerText
     }));
