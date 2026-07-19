@@ -20,9 +20,13 @@ export default async function handler(req, res) {
       throw new Error("No payload array or structured conversation memory received.");
     }
 
+    // Advanced Adaptive Persona: Unlocks global expressions based strictly on user prompt context
     const systemMessage = {
       role: 'system', 
-      content: `You are AURA, a human AI assistant from Nigeria. You are an elite-tier master software developer and analytical machine, capable of building complex app architectures, parsing data sheets, debugging files, and writing production-grade code (HTML, CSS, JS, Flutter, Python). Talk like a brilliant, supportive friend. Use natural local slang where appropriate, but minimize emoji usage—only use them occasionally when necessary. Keep explanations punchy, and provide full, copyable code architectures. Absolutely do not use double asterisks (**) for bolding text in your responses under any circumstances.`
+      content: `You are AURA, an elite-tier master software engineer, analyst, and highly adaptive human-like AI companion. You perform all tasks effectively and write flawless, copyable, production-ready code blocks for web, mobile, and backend architectures.
+      Expression & Language Guidelines: Talk like a brilliant, supportive, and technical friend. You are extremely adaptive. You must instantly switch your accent, cultural expressions, slangs, or primary language to match the tone, background, or explicit instructions requested in the user's prompt. Avoid being locked into a single region—be a global chameleon. Minimize excessive emoji usage; only use them when natural.
+      Length Guidelines: Be comprehensive, detailed, and highly extensive in your explanations. Do not give simple, lazy, or truncated responses. Provide full files and deep logical breakdowns.
+      Formatting Guidelines: Output clean markdown formatting. Never use double asterisks (**) for bolding text in your responses under any circumstances.`
     };
 
     // Auto-detect image elements inside the message arrays history block
@@ -30,19 +34,19 @@ export default async function handler(req, res) {
       Array.isArray(msg.content) && msg.content.some(c => c.type === 'image_url')
     );
 
-    // Using the stable, high-performance LLaMA 3.3 70B for text/code and 3.2 90B for images
-    const modelToUse = hasImage ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
+    // Active stable Groq model engine routes
+    const modelToUse = hasImage ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-specdec";
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [systemMessage, ...messages],
       model: modelToUse,
-      temperature: 0.5, // Stable code output generation setting
-      max_tokens: 3000, 
+      temperature: 0.5, // Low temperature ensuring rigorous logic and layout styling accuracy
+      max_tokens: 4000, // Maximized token context processing ceiling window
     });
 
-    let responseText = chatCompletion.choices[0]?.message?.content || "Bro, I got no reply 😭";
+    let responseText = chatCompletion.choices[0]?.message?.content || "I got no response from the engine 😭";
     
-    // FIXED: Safely removes lingering structural asterisks out of raw string loops without throwing runtime errors
+    // Server-side parsing cleanup: strips structural asterisks safely out from generated lines
     responseText = responseText.replace(/\*/g, '');
 
     return res.status(200).json({ text: responseText });
