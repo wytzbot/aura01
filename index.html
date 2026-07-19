@@ -9,54 +9,55 @@
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
 <style>
-  html, body { height: 100%; background: #020202; color: #e5e5e5; overflow: hidden; }
- .aura-orange { color: #FF7A00; }
- .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; }
- .bubble-ai { background: #111; }
- .prose h1 { font-size: 1.5rem; font-weight: 800; margin: 1rem 0; }
- .prose h2 { font-size: 1.2rem; font-weight: 700; margin:.8rem 0; }
- .prose a { color: #22c55e; text-decoration: underline; }
- .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
- .prose th,.prose td { border: 1px solid #333; padding: 8px; }
- .code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 1rem 0; position: relative; }
- .code-block button { position: absolute; top: 8px; right: 8px; }
+  html, body { height: 100%; background: #020202; color: #e5e5e5; overflow: hidden; margin:0; }
+.aura-orange { color: #FF7A00; }
+.bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; }
+.bubble-ai { background: #111; }
+.prose h1 { font-size: 1.5rem; font-weight: 800; margin: 1rem 0; }
+.prose h2 { font-size: 1.2rem; font-weight: 700; margin:.8rem 0; }
+.prose a { color: #22c55e; text-decoration: underline; }
+.prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.prose th,.prose td { border: 1px solid #333; padding: 8px; }
+.code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 1rem 0; position: relative; }
+.code-block button { position: absolute; top: 8px; right: 8px; }
   #chat { height: calc(100dvh - 140px); }
-  #inputBar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
+  #inputBar { position: fixed; bottom: 0; left: 0; right: 0; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
- .bounce { animation: bounce 2s infinite; }
- .pull-refresh { text-align:center; padding:10px; color:#FF7A00; transform:translateY(-50px); transition:.2s; }
+.bounce { animation: bounce 2s infinite; }
+.pull-refresh { text-align:center; padding:10px; color:#FF7A00; transform:translateY(-50px); transition:.2s; }
+.hidden { display: none!important; }
 </style>
 </head>
 <body>
 
+<!-- WELCOME SCREEN -->
+<div id="welcome" class="h-screen flex-col items-center justify-center p-6 text-center">
+  <h1 class="text-5xl font-bold aura-orange bounce mb-4">AURA</h1>
+  <p class="text-gray-400 mb-8">Your AI Assistant. Fast. Human. Free.</p>
+  <div class="grid grid-cols-2 gap-4 mb-8 w-full max-w-sm">
+    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.2s">⚡ Instant</div>
+    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.4s">🧠 Smart</div>
+    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.6s">💻 Code</div>
+    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.8s">📊 Data</div>
+  </div>
+  <button id="startBtn" class="bg-[#FF7A00] text-black font-bold py-3 px-8 rounded-lg text-lg">Start Chatting</button>
+</div>
+
 <!-- SIDEBAR -->
 <div id="sidebar" class="hidden w-72 bg-[#0a0a0a] border-r border-[#222] p-4 flex-col h-full z-40 fixed">
-  <button onclick="newChat()" class="bg-[#FF7A00] text-black font-bold py-3 px-4 rounded-lg mb-4 w-full">+ New Chat</button>
-  <input id="search" oninput="searchChats()" placeholder="Search chats..." class="bg-[#111] p-3 rounded mb-4 text-sm border-[#333] w-full">
+  <button id="newChatBtn" class="bg-[#FF7A00] text-black font-bold py-3 px-4 rounded-lg mb-4 w-full">+ New Chat</button>
+  <input id="search" placeholder="Search chats..." class="bg-[#111] p-3 rounded mb-4 text-sm border-[#333] w-full">
   <div id="chatList" class="overflow-y-auto flex-1 space-y-1"></div>
   <div id="cacheStat" class="text-xs text-gray-500 mt-2">Cache: 0%</div>
 </div>
-<div id="overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 z-30"></div>
-
-<!-- WELCOME SCREEN -->
-<div id="welcome" class="h-screen flex flex-col items-center justify-center p-6 text-center">
-  <h1 class="text-4xl font-bold aura-orange bounce mb-4">AURA</h1>
-  <p class="text-gray-400 mb-8">Your AI Assistant. Fast. Human. Free.</p>
-  <div class="grid grid-cols-2 gap-4 mb-8">
-    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.2s">⚡ Instant Answers</div>
-    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.4s">🧠 Smart Memory</div>
-    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.6s">💻 Code Helper</div>
-    <div class="bg-[#111] p-4 rounded-lg bounce" style="animation-delay:.8s">📊 Tables & Data</div>
-  </div>
-  <button onclick="startApp()" class="bg-[#FF7A00] text-black font-bold py-3 px-8 rounded-lg text-lg">Start Chatting</button>
-</div>
+<div id="overlay" class="hidden fixed inset-0 bg-black/60 z-30"></div>
 
 <!-- MAIN APP -->
 <div id="app" class="hidden h-screen flex flex-col">
   <header class="p-4 border-b border-[#222] flex justify-between items-center flex-shrink-0">
-    <button onclick="toggleSidebar()" class="text-xl">☰</button>
+    <button id="menuBtn" class="text-xl">☰</button>
     <h1 class="text-xl font-bold aura-orange">AURA AI Pro</h1>
-    <button onclick="newChat()">+</button>
+    <button id="plusBtn">+</button>
   </header>
 
   <div id="pull" class="pull-refresh">↓ Pull to refresh</div>
@@ -83,6 +84,16 @@
   let chats = [];
   let cacheHits = 0, totalReqs = 0;
 
+  // GET ELEMENTS
+  const welcome = document.getElementById('welcome');
+  const appDiv = document.getElementById('app');
+  const startBtn = document.getElementById('startBtn');
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+
   marked.setOptions({ breaks: true });
   const renderer = new marked.Renderer();
   renderer.code = (code) => `<div class="code-block"><button onclick="copyCode(this)" class="text-xs aura-orange">Copy</button><pre><code>${code}</code></pre></div>`;
@@ -90,8 +101,30 @@
 
   function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
 
-  // WELCOME LOGIC
-  window.startApp = () => { welcome.classList.add('hidden'); app.classList.remove('hidden'); loadChats(); }
+  // NAVIGATION + BACK BUTTON FIX
+  function showApp() {
+    welcome.classList.add('hidden');
+    appDiv.classList.remove('hidden');
+    history.pushState({page: 'app'}, ''); // add to history
+    loadChats();
+  }
+  function showWelcome() {
+    appDiv.classList.add('hidden');
+    welcome.classList.remove('hidden');
+  }
+
+  startBtn.onclick = showApp;
+  document.getElementById('newChatBtn').onclick = () => { currentChatId = Date.now().toString(); chat.innerHTML = ''; toggleSidebar(); }
+  document.getElementById('menuBtn').onclick = toggleSidebar;
+  document.getElementById('plusBtn').onclick = () => { currentChatId = Date.now().toString(); chat.innerHTML = ''; }
+  overlay.onclick = toggleSidebar;
+
+  // HANDLE DEVICE BACK BUTTON
+  window.onpopstate = (e) => {
+    if(e.state && e.state.page === 'app') showApp();
+    else showWelcome();
+    toggleSidebar(); // close sidebar on back
+  }
 
   // CHAT LOGIC
   form.onsubmit = async (e) => {
@@ -121,26 +154,30 @@
     totalReqs++;
     const bubble = addMessage('ai', '');
     const contentDiv = bubble.querySelector('.prose');
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({messages: [
-        {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 and ## H2. Use tables and ```code```.'},
-     ...getAllMessages(), {role:'user', content: prompt}
-      ]})
-    });
-    if(!res.ok) { contentDiv.innerText = "A server error occurred. Tap Redo to try again."; return; }
-    if(res.headers.get('X-Cache') === 'HIT') cacheHits++;
-    updateCacheStat();
-    const reader = res.body.getReader();
-    let text = '';
-    while(true) {
-      const {done, value} = await reader.read();
-      if(done) break;
-      text += new TextDecoder().decode(value);
-      contentDiv.innerHTML = renderMessage(text);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({messages: [
+          {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 and ## H2. Use tables and ```code```.'},
+       ...getAllMessages(), {role:'user', content: prompt}
+        ]})
+      });
+      if(!res.ok) throw new Error("Server Error");
+      if(res.headers.get('X-Cache') === 'HIT') cacheHits++;
+      updateCacheStat();
+      const reader = res.body.getReader();
+      let text = '';
+      while(true) {
+        const {done, value} = await reader.read();
+        if(done) break;
+        text += new TextDecoder().decode(value);
+        contentDiv.innerHTML = renderMessage(text);
+      }
+      saveChat();
+    } catch(err) {
+      contentDiv.innerText = "A server error occurred. Tap Redo to try again.";
     }
-    saveChat();
   }
 
   function getAllMessages() {
@@ -166,26 +203,20 @@
   }
 
   window.openChat = (id) => { currentChatId = id; const c = chats.find(x => x.id === id); chat.innerHTML = c.messages; toggleSidebar(); }
-  window.newChat = () => { currentChatId = Date.now().toString(); chat.innerHTML = ''; toggleSidebar(); }
-  window.searchChats = () => { const term = search.value.toLowerCase(); chatList.innerHTML = chats.filter(c => c.title.toLowerCase().includes(term)).map(c => `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`).join(''); }
+  document.getElementById('search').oninput = (e) => { const term = e.target.value.toLowerCase(); chatList.innerHTML = chats.filter(c => c.title.toLowerCase().includes(term)).map(c => `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`).join(''); }
   function updateCacheStat() { const pct = totalReqs? Math.round((cacheHits/totalReqs)*100) : 0; cacheStat.innerText = `Cache: ${pct}%`; }
   window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble-user,.bubble-ai').querySelector('.prose').innerText);
   window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
   window.delMsg = (btn) => { btn.closest('.bubble-user,.bubble-ai').remove(); saveChat(); }
   window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
-  window.editMsg = (btn) => { const p = btn.closest('.bubble-user').querySelector('.prose'); const newText = prompt("Edit message:", p.innerText); if(newText) p.innerText = newText; saveChat(); }
+  window.editMsg = (btn) => { const p = btn.closest('.bubble-user').querySelector('.prose'); const newText = prompt("Edit message:", p.innerText); if(newText) {p.innerText = newText; saveChat();} }
   window.toggleSidebar = () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
 
   // SWIPE DOWN REFRESH
   let startY = 0;
   chat.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-  chat.addEventListener('touchmove', e => {
-    if(chat.scrollTop === 0 && e.touches[0].clientY - startY > 50) pull.style.transform = 'translateY(0)';
-  });
-  chat.addEventListener('touchend', e => {
-    if(e.changedTouches[0].clientY - startY > 100 && chat.scrollTop === 0) location.reload();
-    pull.style.transform = 'translateY(-50px)';
-  });
+  chat.addEventListener('touchmove', e => { if(chat.scrollTop === 0 && e.touches[0].clientY - startY > 50) pull.style.transform = 'translateY(0)'; });
+  chat.addEventListener('touchend', e => { if(e.changedTouches[0].clientY - startY > 100 && chat.scrollTop === 0) location.reload(); pull.style.transform = 'translateY(-50px)'; });
 </script>
 </body>
-    </html>
+</html>
