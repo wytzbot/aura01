@@ -11,23 +11,16 @@
   :root{ --bg:#020202; --text:#F5F5F5; --muted:#888; --orange:#FF7A00; --orange-dark:#FF4500; --border:#1a1a1a; --sidebar:#0a0a0a; --bubble:#111; }
   *{margin:0;padding:0;box-sizing:border-box;font-family:"Inter",system-ui,sans-serif; -webkit-tap-highlight-color: transparent}
   html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
-
-  /* Animated Dynamic BG */
   #bg{position:fixed;inset:0;z-index:0;background:radial-gradient(circle at 20% 50%, #FF7A0012, transparent 50%), radial-gradient(circle at 80% 20%, #FF450012, transparent 50%); animation:bgMove 15s infinite alternate ease-in-out}
   @keyframes bgMove{0%{transform:scale(1) rotate(0deg)}100%{transform:scale(1.2) rotate(5deg)}}
-
-  /* Sidebar / History */
 .sidebar{position:fixed;left:-320px;top:0;width:320px;height:100%;background:rgba(10,10,10,0.9);backdrop-filter:blur(20px);border-right:1px solid var(--border);z-index:20;transition:left 0.3s cubic-bezier(.4,0,.2,1);padding:20px;display:flex;flex-direction:column}
 .sidebar.open{left:0}
 .sidebar h3{margin-bottom:15px;font-size:20px;background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .sidebar input{width:100%;padding:12px;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);margin-bottom:15px;outline:none}
 .chat-item{padding:14px;border-radius:12px;margin:6px 0;background:#1a1a1a;cursor:pointer;position:relative;font-size:14px;transition:0.2s}
 .chat-item:hover{background:#222}
-.chat-item:active{background:#2a2a2a}
 .overlay{position:fixed;inset:0;background:#000a;display:none;z-index:19;transition:0.3s}
 .overlay.show{display:block}
-
-  /* Auth */
   #authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;position:relative;z-index:2;padding:20px}
   #authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:3.5rem;font-weight:900;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
@@ -35,8 +28,6 @@
 .auth-box input{width:100%;padding:14px;margin:10px 0;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none}
 .btn{background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:12px;transition:0.2s}
 .btn:active{transform:scale(0.97)}
-
-  /* App */
   #app{display:none;height:100dvh;width:100vw;position:relative;z-index:2; flex-direction:column}
 .topbar{padding:15px 20px;display:flex;align-items:center;gap:15px;border-bottom:1px solid var(--border);background:rgba(3,3,3,0.8);backdrop-filter:blur(10px);z-index:5}
 .menu-btn{font-size:24px;cursor:pointer}
@@ -49,14 +40,11 @@
 .bubble-actions{position:absolute;right:8px;top:8px;display:flex;gap:6px;opacity:0;transition:0.2s}
 .bubble:hover.bubble-actions{opacity:1}
 .bubble-actions button{background:#333;border:none;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer}
-.bubble-actions button:active{background:#444}
-
 .input-area{padding:12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);backdrop-filter:blur(10px);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom));transition:bottom 0.2s}
 .input-box{flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:20px;padding:8px 12px;display:flex;gap:8px;align-items:center}
 .input-box textarea{flex:1;background:transparent;border:none;color:var(--text);resize:none;outline:none;font-size:15px;max-height:150px}
 .attach{cursor:pointer;font-size:20px;padding:5px}
 .send{background:linear-gradient(135deg,var(--orange),var(--orange-dark));border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;flex-shrink:0}
-.send:active{transform:scale(0.9)}
 .footer-links{margin-top:auto;padding-top:20px;border-top:1px solid var(--border)}
 .footer-links a{color:var(--muted);text-decoration:none;display:block;padding:10px 0;font-size:14px}
 .file-preview{font-size:12px;color:var(--orange);margin-top:5px}
@@ -94,7 +82,7 @@
     <div class="menu-btn" onclick="toggleSidebar()">☰</div>
     <h3>AURA AI Pro</h3>
   </div>
-  <div class="chat-area" id="chatArea" onclick="toggleSidebar(false)">
+  <div class="chat-area" id="chatArea">
     <div class="messages" id="messages"></div>
   </div>
   <div class="input-area" id="inputArea">
@@ -104,43 +92,55 @@
       <textarea id="chatInput" placeholder="Message AURA AI Pro..." rows="1"></textarea>
     </div>
     <button class="send" onclick="handleMessageSending()">➤</button>
-    <div id="fileName" class="file-preview"></div>
   </div>
 </div>
 
 <script type="module">
+// 1. YOUR FIREBASE CONFIG - FIXED
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// REMOVED analytics because it crashes on some mobile browsers
 
-const ALLOWED_EMAIL = "yourgmail@gmail.com"; // CHANGE THIS
+const ALLOWED_EMAIL = "yourgmail@gmail.com"; // <<< CHANGE THIS TO YOUR EMAIL
 const API_URL = "/api/chat"; // Vercel backend
 
-const firebaseConfig = {apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0", authDomain: "my-wyticle-id.firebaseapp.com", projectId: "my-wyticle-id"};
+const firebaseConfig = {
+  apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+  authDomain: "my-wyticle-id.firebaseapp.com",
+  projectId: "my-wyticle-id",
+  storageBucket: "my-wyticle-id.firebasestorage.app",
+  messagingSenderId: "634169882815",
+  appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
+  measurementId: "G-7X84RSMH58"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 let chatHistory = JSON.parse(localStorage.getItem('aura_history_v2') || '[]');
 let currentChatId = Date.now();
-let attachedFile = null;
 
 onAuthStateChanged(auth,user=>{
-  if(user && user.email === ALLOWED_EMAIL){
+  if(user && user.email.toLowerCase() === ALLOWED_EMAIL.toLowerCase()){
     document.getElementById('authScreen').style.display='none';
     document.getElementById('app').style.display='flex';
     loadHistory();
   }else{
-    if(user) auth.signOut();
+    if(user) signOut(auth);
     document.getElementById('authScreen').style.display='flex';
     document.getElementById('app').style.display='none'
   }
 })
-window.login = async()=>{try{await signInWithEmailAndPassword(auth,email.value,password.value)}catch(e){alert(e.message)}}
-window.toggleSidebar = (force)=>{const sb=document.getElementById('sidebar'); const ov=document.querySelector('.overlay'); if(force===false){sb.classList.remove('open');ov.classList.remove('show')} else {sb.classList.toggle('open');ov.classList.toggle('show')}}
 
-document.getElementById('fileInput').onchange = e => {
-  attachedFile = e.target.files[0];
-  document.getElementById('fileName').innerText = attachedFile? `📎 ${attachedFile.name}` : '';
+window.login = async()=>{
+  try{
+    await signInWithEmailAndPassword(auth,document.getElementById('email').value,document.getElementById('password').value)
+  }catch(e){
+    alert("Login Error: " + e.message) // Now you will see why it fails
+  }
 }
+
+window.toggleSidebar = (force)=>{const sb=document.getElementById('sidebar'); const ov=document.querySelector('.overlay'); if(force===false){sb.classList.remove('open');ov.classList.remove('show')} else {sb.classList.toggle('open');ov.classList.toggle('show')}}
 
 document.getElementById('chatInput').addEventListener('input', e => {
   e.target.style.height = 'auto';
@@ -149,12 +149,10 @@ document.getElementById('chatInput').addEventListener('input', e => {
 
 window.handleMessageSending=async()=>{
   const text=document.getElementById('chatInput').value.trim();
-  if(!text &&!attachedFile) return;
-  const userMsg = text + (attachedFile? `\n[Attached: ${attachedFile.name}]` : '');
+  if(!text) return;
   document.getElementById('chatInput').value='';
-  document.getElementById('fileName').innerText='';
-  addBubble('user',userMsg);
-  saveToHistory('user', userMsg);
+  addBubble('user',text);
+  saveToHistory('user', text);
   const aiId=addBubble('ai','');
 
   const messages = chatHistory.filter(c=>c.id===currentChatId).map(m => ({role: m.role, content: m.text}));
@@ -170,9 +168,8 @@ window.handleMessageSending=async()=>{
     typeWriter(document.getElementById(aiId), reply);
     saveToHistory('assistant', reply);
   }catch(e){
-    document.getElementById(aiId).childNodes[0].nodeValue = "Error: Failed to connect. Check Vercel logs.";
+    document.getElementById(aiId).querySelector('span').innerText = "Error: Failed to connect. Check Vercel logs.";
   }
-  attachedFile = null;
 }
 
 function addBubble(role,text){
@@ -201,11 +198,11 @@ function copyText(id){navigator.clipboard.writeText(document.getElementById(id).
 function downloadText(id){const blob=new Blob([document.getElementById(id).querySelector('span').innerText],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aura-response.txt'; a.click()}
 function deleteBubble(id){document.getElementById(id).remove()}
 function editBubble(id){const newText=prompt('Edit message:', document.getElementById(id).querySelector('span').innerText); if(newText) document.getElementById(id).querySelector('span').innerText=newText}
+document.addEventListener('click', (e)=>{if(!e.target.closest('.sidebar') &&!e.target.closest('.menu-btn')){toggleSidebar(false)}})
 </script>
 
 <script>
-// PWA Service Worker
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
 </script>
 </body>
-                                                                               </html>
+  </html>
