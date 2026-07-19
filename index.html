@@ -2,172 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AURA AI Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURA AI</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-    * { font-family: 'Inter', sans-serif; }
-  body { background: #000; color: #e5e5e5; margin:0; padding:0; }
-  #app { height: 100vh; display: flex; flex-direction: column; } /* KEY FIX: 100vh not dvh */
- .glass { background: rgba(17,17,17,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,122,0,0.2); }
- .aura-gradient { background: linear-gradient(135deg, #FF7A00 0%, #FF5500 100%); }
- .bubble { max-width: 85%; padding: 14px 16px; border-radius: 18px; line-height: 1.6; animation: slideUp.3s ease; }
-  @keyframes slideUp { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
- .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
- .bubble-ai { background: #0f0f0f; margin-right: auto; }
- .prose a { color: #22c55e; text-decoration: underline; }
- .code-block { background: #020202; border: 1px solid #333; border-radius: 12px; padding: 14px; margin: 1rem 0; position: relative; }
- .code-block button { position: absolute; top: 8px; right: 8px; background:#222; padding:4px 10px; border-radius:6px; font-size:12px; }
-  #chat { flex: 1; overflow-y: auto; padding: 16px; } /* KEY FIX: flex 1 */
-  #inputBar { flex-shrink: 0; padding: 12px; background: #000; border-top: 1px solid #222; } /* KEY FIX: no fixed */
-  #sidebar { position: fixed; top:0; left:0; height:100%; width:300px; background:#050505; z-index:50; transform:translateX(-100%); transition:.3s; }
-  #sidebar.open { transform:translateX(0); }
-  #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#000c; z-index:40; }
- .preview-img { max-width: 100px; max-height: 100px; border-radius: 12px; border: 1px solid #FF7A00; }
- .hidden { display: none!important; }
+  body { background: #000; color: #fff; margin:0; }
+ .orange { color: #FF7A00; }
+ .btn-orange { background: #FF7A00; color: #000; }
+ .bubble { padding: 12px; margin: 8px 0; border-radius: 12px; max-width: 90%; }
+ .user { background: #222; border: 1px solid #FF7A00; margin-left: auto; }
+ .ai { background: #111; margin-right: auto; }
+  #chat { height: calc(100vh - 160px); overflow-y: auto; padding: 10px; }
 </style>
 </head>
 <body>
 
-<div id="sidebar" class="p-4"><h2 class="text-xl font-bold text-[#FF7A00] mb-4">History</h2><div id="chatList" class="space-y-2"></div></div>
-<div id="overlay" class="hidden"></div>
+<!-- PAGE 1: WELCOME -->
+<div id="welcome" class="h-screen flex flex-col items-center justify-center p-6 text-center">
+  <h1 class="text-5xl font-extrabold orange mb-3">AURA</h1>
+  <p class="text-gray-400 mb-8">Your funny, smart AI bestie 😎</p>
+  <button id="startBtn" class="btn-orange font-bold py-4 px-10 rounded-xl text-lg">Start Chatting</button>
+</div>
 
-<div id="app">
-  <header class="p-4 glass flex justify-between items-center flex-shrink-0">
-    <button id="menuBtn" class="text-2xl">☰</button>
-    <div class="text-center"><h1 class="text-xl font-extrabold text-[#FF7A00]">AURA</h1><p class="text-xs text-gray-400">AI Assistant</p></div>
-    <button id="plusBtn" class="text-2xl">+</button>
+<!-- PAGE 2: CHAT -->
+<div id="chatPage" class="hidden h-screen flex flex-col">
+  <header class="p-4 border-b border-gray-800 flex justify-between">
+    <button id="backBtn" class="text-2xl">←</button>
+    <h1 class="text-xl font-bold orange">AURA</h1>
+    <button id="newBtn" class="text-2xl">+</button>
   </header>
 
-  <div id="welcomeContent" class="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
-    <h1 class="text-5xl font-extrabold text-[#FF7A00] mb-3">Welcome to AURA</h1>
-    <p class="text-gray-400 mb-8">Your funny, smart AI bestie 😎</p>
-    <div class="grid grid-cols-2 gap-3 mb-8 w-full max-w-sm">
-      <div class="glass p-4 rounded-xl border-0">⚡<br><span class="text-sm">Instant</span></div>
-      <div class="glass p-4 rounded-xl border-0">🧠<br><span class="text-sm">Smart</span></div>
-      <div class="glass p-4 rounded-xl border-0">📎<br><span class="text-sm">Files</span></div>
-      <div class="glass p-4 rounded-xl border-0">💾<br><span class="text-sm">Memory</span></div>
-    </div>
-    <button id="startBtn" class="aura-gradient text-black font-bold py-4 px-10 rounded-xl text-lg shadow-lg">Start Chatting</button>
-  </div>
+  <div id="chat"></div>
 
-  <div id="chatContent" class="hidden flex-1 flex flex-col">
-    <div id="chat"></div>
-
-    <div id="inputBar">
-      <div id="preview" class="hidden mb-2"></div>
-      <form id="form" class="flex gap-2 items-center">
-        <button type="button" id="attachBtn" class="p-3 text-2xl">📎</button>
-        <button type="button" id="cameraBtn" class="p-3 text-2xl">📷</button>
-        <input type="file" id="fileInput" accept="image/*" class="hidden">
-        <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-4 rounded-2xl border-[#333] focus:border-[#FF7A00] outline-none text-base" placeholder="Message AURA...">
-        <button type="submit" id="sendBtn" class="aura-gradient text-black p-4 rounded-2xl font-bold">
-          <svg width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-      </form>
-    </div>
+  <div class="p-3 border-t border-gray-800 bg-black">
+    <div id="preview" class="hidden mb-2"></div>
+    <form id="form" class="flex gap-2 items-center">
+      <button type="button" id="attachBtn" class="text-2xl p-2">📎</button>
+      <button type="button" id="cameraBtn" class="text-2xl p-2">📷</button>
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+      <input id="input" class="flex-1 bg-[#111] p-3 rounded-xl outline-none" placeholder="Message AURA...">
+      <button type="submit" class="btn-orange p-3 rounded-xl font-bold">➤</button>
+    </form>
   </div>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = { apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0", projectId: "my-wyticle-id" };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  let currentChatId = Date.now().toString();
+<script>
   let attachedFile = null;
-
-  const welcomeContent = document.getElementById('welcomeContent');
-  const chatContent = document.getElementById('chatContent');
+  const welcome = document.getElementById('welcome');
+  const chatPage = document.getElementById('chatPage');
   const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
 
-  document.getElementById('startBtn').onclick = () => { 
-    welcomeContent.classList.add('hidden');
-    chatContent.classList.remove('hidden');
-    history.pushState({page: 'chat'}, '');
-    setTimeout(() => document.getElementById('input').focus(), 300); // auto focus keyboard
+  // 1. BUTTON LOGIC - SIMPLE
+  document.getElementById('startBtn').onclick = () => {
+    welcome.style.display = 'none';
+    chatPage.style.display = 'flex';
   }
-  document.getElementById('plusBtn').onclick = () => {
-    chat.innerHTML = '';
-    currentChatId = Date.now().toString();
-    welcomeContent.classList.remove('hidden');
-    chatContent.classList.add('hidden');
+  document.getElementById('backBtn').onclick = () => {
+    chatPage.style.display = 'none';
+    welcome.style.display = 'flex';
   }
+  document.getElementById('newBtn').onclick = () => { chat.innerHTML = ''; }
 
-  document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.remove('hidden'); }
-  document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.add('hidden'); }
-  
+  // 2. ATTACH + CAMERA
   document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
-  document.getElementById('cameraBtn').onclick = () => { document.getElementById('fileInput').setAttribute('capture', 'environment'); document.getElementById('fileInput').click(); }
+  document.getElementById('cameraBtn').onclick = () => { 
+    document.getElementById('fileInput').setAttribute('capture', 'environment'); 
+    document.getElementById('fileInput').click(); 
+  }
   document.getElementById('fileInput').onchange = (e) => {
     const file = e.target.files[0];
-    if(file) { attachedFile = file; const reader = new FileReader(); reader.onload = (ev) => { document.getElementById('preview').innerHTML = `<img src="${ev.target.result}" class="preview-img">`; document.getElementById('preview').classList.remove('hidden'); } reader.readAsDataURL(file); }
+    if(file) { 
+      attachedFile = file; 
+      const reader = new FileReader(); 
+      reader.onload = (ev) => { 
+        document.getElementById('preview').innerHTML = `<img src="${ev.target.result}" style="max-width:100px;border-radius:8px">`; 
+        document.getElementById('preview').classList.remove('hidden'); 
+      } 
+      reader.readAsDataURL(file); 
+    }
   }
 
-  marked.setOptions({ breaks: true });
-  const renderer = new marked.Renderer();
-  renderer.code = (code) => `<div class="code-block"><button onclick="copyCode(this)">Copy</button><pre><code>${code}</code></pre></div>`;
-  marked.setOptions({ renderer });
-  function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
-
-  document.getElementById('form').addEventListener('submit', async (e) => {
+  // 3. SEND MESSAGE
+  form.onsubmit = async (e) => {
     e.preventDefault();
-    const msg = document.getElementById('input').value.trim();
+    const msg = input.value.trim();
     if(!msg &&!attachedFile) return;
-    addMessage('user', attachedFile? `[Image Attached] ${msg}` : msg);
-    document.getElementById('input').value = ''; document.getElementById('preview').classList.add('hidden');
-    await streamAI(msg); attachedFile = null;
-  });
-
-  function addMessage(role, content) {
-    const div = document.createElement('div');
-    div.className = `bubble ${role === 'user'? 'bubble-user' : 'bubble-ai'}`;
-    div.innerHTML = `<div class="prose">${renderMessage(content)}</div>`;
-    div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-500"><button onclick="copyMsg(this)">Copy</button><button onclick="redo()">Redo</button><button onclick="delMsg(this)">Delete</button></div>`;
-    chat.appendChild(div); setTimeout(() => chat.scrollTop = chat.scrollHeight, 100); return div;
+    
+    addMsg('user', attachedFile? `[Image] ${msg}` : msg);
+    input.value = '';
+    document.getElementById('preview').classList.add('hidden');
+    
+    addMsg('ai', 'Thinking... 😎');
+    await callAI(msg);
+    attachedFile = null;
   }
 
-  async function streamAI(prompt) {
-    const bubble = addMessage('ai', '...');
-    const contentDiv = bubble.querySelector('.prose');
+  function addMsg(role, text) {
+    const div = document.createElement('div');
+    div.className = `bubble ${role}`;
+    div.innerHTML = marked.parse(text);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  async function callAI(prompt) {
+    const aiBubble = chat.lastChild;
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant from Nigeria. Talk like a friend. Use slang, jokes, and emojis 😎🔥 Be warm. Use markdown: # H1 ## H2, **bold**, tables, \`\`code\`\`. Keep replies short.`},
-       ...getAllMessages(), {role:'user', content: prompt}
+          {role:'system', content:'You are AURA. Be funny, human, use emojis 😂🔥. Talk like a friend from Nigeria.'},
+          {role:'user', content: prompt}
         ]})
       });
-      if(!res.ok) throw new Error(await res.text());
-      const reader = res.body.getReader();
-      let text = '';
-      while(true) {
-        const {done, value} = await reader.read();
-        if(done) break;
-        text += new TextDecoder().decode(value);
-        contentDiv.innerHTML = renderMessage(text);
-        chat.scrollTop = chat.scrollHeight;
-      }
-    } catch(err) { contentDiv.innerText = "Error: " + err.message + " 😭"; contentDiv.style.color = "#ef4444"; }
+      const data = await res.json(); // Simpler: no streaming for now
+      aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(data.text || "Error: No reply 😭"));
+    } catch(err) {
+      aiBubble.innerHTML = "Error: " + err.message;
+      aiBubble.style.color = 'red';
+    }
   }
-
-  function getAllMessages() {
-    return [...chat.children].map(b => ({
-      role: b.classList.contains('bubble-user')? 'user' : 'assistant',
-      content: b.querySelector('.prose').innerText
-    }));
-  }
-
-  window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble').querySelector('.prose').innerText);
-  window.delMsg = (btn) => { btn.closest('.bubble').remove(); }
-  window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
-  window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
 </script>
 </body>
-   </html>
+</html>
