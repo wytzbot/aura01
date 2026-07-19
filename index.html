@@ -21,14 +21,7 @@
 .chat-item:hover{background:#222}
 .overlay{position:fixed;inset:0;background:#000a;display:none;z-index:19;transition:0.3s}
 .overlay.show{display:block}
-  #authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;position:relative;z-index:2;padding:20px}
-  #authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:3.5rem;font-weight:900;animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-.auth-box{background:rgba(17,17,17,0.8);backdrop-filter:blur(20px);padding:30px;border-radius:20px;width:100%;max-width:420px;border:1px solid var(--border)}
-.auth-box input{width:100%;padding:14px;margin:10px 0;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none}
-.btn{background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:12px;transition:0.2s}
-.btn:active{transform:scale(0.97)}
-  #app{display:none;height:100dvh;width:100vw;position:relative;z-index:2; flex-direction:column}
+  #app{display:flex;height:100dvh;width:100vw;position:relative;z-index:2; flex-direction:column}
 .topbar{padding:15px 20px;display:flex;align-items:center;gap:15px;border-bottom:1px solid var(--border);background:rgba(3,3,3,0.8);backdrop-filter:blur(10px);z-index:5}
 .menu-btn{font-size:24px;cursor:pointer}
 .chat-area{flex:1;overflow-y:auto;padding:20px 20px 130px 20px;display:flex;flex-direction:column;align-items:center}
@@ -40,7 +33,7 @@
 .bubble-actions{position:absolute;right:8px;top:8px;display:flex;gap:6px;opacity:0;transition:0.2s}
 .bubble:hover.bubble-actions{opacity:1}
 .bubble-actions button{background:#333;border:none;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer}
-.input-area{padding:12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);backdrop-filter:blur(10px);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom));transition:bottom 0.2s}
+.input-area{padding:12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);backdrop-filter:blur(10px);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .input-box{flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:20px;padding:8px 12px;display:flex;gap:8px;align-items:center}
 .input-box textarea{flex:1;background:transparent;border:none;color:var(--text);resize:none;outline:none;font-size:15px;max-height:150px}
 .attach{cursor:pointer;font-size:20px;padding:5px}
@@ -56,24 +49,13 @@
 
 <div class="sidebar" id="sidebar">
   <h3>AURA AI Pro</h3>
-  <button class="btn" onclick="newChat()">+ New Chat</button>
+  <button class="btn" style="background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;width:100%;margin-bottom:15px" onclick="newChat()">+ New Chat</button>
   <input type="text" id="searchChat" placeholder="Search all chats..." onkeyup="searchHistory()">
   <div id="historyList" style="flex:1;overflow-y:auto"></div>
   <div class="footer-links">
     <a href="#">Privacy Policy</a>
     <a href="#">Terms of Service</a>
     <a href="#">About AURA</a>
-    <a href="#" onclick="auth.signOut()">Logout</a>
-  </div>
-</div>
-
-<div id="authScreen">
-  <h1>AURA</h1>
-  <p style="color:var(--muted);margin-bottom:20px">Private AI Assistant</p>
-  <div class="auth-box">
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button class="btn" onclick="login()">Login</button>
   </div>
 </div>
 
@@ -96,49 +78,13 @@
 </div>
 
 <script type="module">
-// 1. YOUR FIREBASE CONFIG - FIXED
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-// REMOVED analytics because it crashes on some mobile browsers
-
-const ALLOWED_EMAIL = "yourgmail@gmail.com"; // <<< CHANGE THIS TO YOUR EMAIL
+// NO FIREBASE. NO LOGIN. STRAIGHT TO CHAT
 const API_URL = "/api/chat"; // Vercel backend
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
-  authDomain: "my-wyticle-id.firebaseapp.com",
-  projectId: "my-wyticle-id",
-  storageBucket: "my-wyticle-id.firebasestorage.app",
-  messagingSenderId: "634169882815",
-  appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
-  measurementId: "G-7X84RSMH58"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-let chatHistory = JSON.parse(localStorage.getItem('aura_history_v2') || '[]');
+let chatHistory = JSON.parse(localStorage.getItem('aura_history_v3') || '[]');
 let currentChatId = Date.now();
 
-onAuthStateChanged(auth,user=>{
-  if(user && user.email.toLowerCase() === ALLOWED_EMAIL.toLowerCase()){
-    document.getElementById('authScreen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadHistory();
-  }else{
-    if(user) signOut(auth);
-    document.getElementById('authScreen').style.display='flex';
-    document.getElementById('app').style.display='none'
-  }
-})
-
-window.login = async()=>{
-  try{
-    await signInWithEmailAndPassword(auth,document.getElementById('email').value,document.getElementById('password').value)
-  }catch(e){
-    alert("Login Error: " + e.message) // Now you will see why it fails
-  }
-}
+window.onload = ()=>{ loadHistory(); } // Load straight away
 
 window.toggleSidebar = (force)=>{const sb=document.getElementById('sidebar'); const ov=document.querySelector('.overlay'); if(force===false){sb.classList.remove('open');ov.classList.remove('show')} else {sb.classList.toggle('open');ov.classList.toggle('show')}}
 
@@ -188,9 +134,9 @@ function addBubble(role,text){
 }
 function typeWriter(el, text){let i=0;let timer=setInterval(()=>{el.querySelector('span').innerText+=text[i++];document.getElementById('chatArea').scrollTop=99999;if(i>=text.length)clearInterval(timer)},6)}
 
-function saveToHistory(role, text){chatHistory.push({role, text, id: currentChatId, time: Date.now()}); localStorage.setItem('aura_history_v2', JSON.stringify(chatHistory)); loadHistory()}
+function saveToHistory(role, text){chatHistory.push({role, text, id: currentChatId, time: Date.now()}); localStorage.setItem('aura_history_v3', JSON.stringify(chatHistory)); loadHistory()}
 function loadHistory(){const list=document.getElementById('historyList'); list.innerHTML=''; [...new Set(chatHistory.map(c=>c.id))].reverse().forEach(id=>{const first=chatHistory.find(c=>c.id===id); if(!first)return; const div=document.createElement('div'); div.className='chat-item'; div.innerText=first.text.slice(0,50); let pressTimer; div.onmousedown=()=>pressTimer=setTimeout(()=>{if(confirm('Delete this chat?')) deleteChat(id)},800); div.onmouseup=()=>clearTimeout(pressTimer); div.onclick=()=>loadChat(id); list.appendChild(div)})}
-function deleteChat(id){chatHistory=chatHistory.filter(c=>c.id!==id); localStorage.setItem('aura_history_v2', JSON.stringify(chatHistory)); loadHistory()}
+function deleteChat(id){chatHistory=chatHistory.filter(c=>c.id!==id); localStorage.setItem('aura_history_v3', JSON.stringify(chatHistory)); loadHistory()}
 function loadChat(id){document.getElementById('messages').innerHTML=''; chatHistory.filter(c=>c.id===id).forEach(c=>addBubble(c.role,c.text)); currentChatId=id; toggleSidebar(false)}
 function newChat(){currentChatId=Date.now(); document.getElementById('messages').innerHTML=''; toggleSidebar(false)}
 function searchHistory(){const q=document.getElementById('searchChat').value.toLowerCase(); document.querySelectorAll('.chat-item').forEach(i=>i.style.display=i.innerText.toLowerCase().includes(q)?'block':'none')}
@@ -205,4 +151,4 @@ document.addEventListener('click', (e)=>{if(!e.target.closest('.sidebar') &&!e.t
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
 </script>
 </body>
-  </html>
+</html>
