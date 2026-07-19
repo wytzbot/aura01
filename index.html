@@ -16,7 +16,7 @@
   @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
   @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   #authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;position:relative;z-index:2;padding:20px}
-  #authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:3rem;font-weight:900;animation:gradientMove 3s infinite}
+  #authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:3rem;font-weight:900;animation:gradientMove 3s infinite}
 .auth-box{background:rgba(17,17,17,0.8);backdrop-filter:blur(20px);padding:30px;border-radius:20px;width:100%;max-width:420px;border:1px solid var(--border);animation:fadeInUp 0.8s}
 .auth-box input{width:100%;padding:14px;margin:10px 0;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none}
 .btn{background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:12px}
@@ -27,7 +27,7 @@
 .welcome{text-align:center;margin-top:8vh;width:100%;max-width:700px}
 .welcome h1{font-size:2.8rem;background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .messages{width:100%;max-width:850px;display:flex;flex-direction:column}
-.bubble{padding:16px 20px;border-radius:18px;margin:10px 0;max-width:85%;line-height:1.7;white-space:pre-wrap}
+.bubble{padding:16px 20px;border-radius:18px;margin:10px 0;max-width:85%;line-height:1.7;white-space:pre-wrap;animation:fadeInUp 0.4s}
 .user{align-self:flex-end;background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff}
 .ai{align-self:flex-start;background:rgba(17,17,17,0.8);border:1px solid var(--border)}
 .input-area{padding:12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
@@ -70,10 +70,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-for(let i=0;i<15;i++){let p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';document.getElementById('particles').appendChild(p)}
+// BACKGROUND PARTICLES
+for(let i=0;i<15;i++){let p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';p.style.animationDuration=15+Math.random()*10+'s';document.getElementById('particles').appendChild(p)}
 
 const GEMINI_API_KEY = "AIzaSyAF4LXEdJ3P3I9tVMIRgX0-Mlr8ali8fcU";
-const PROXY_URL = "https://corsproxy.io/?"; // FREE PROXY
+const PROXY_URL = "https://corsproxy.io/?"; // FREE PROXY TO BYPASS GITHUB BLOCK
 
 const firebaseConfig = {
   apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
@@ -95,8 +96,9 @@ window.handleMessageSending=async()=>{
   const aiId=addBubble('ai','Thinking...');
 
   try {
-    const realUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const url = PROXY_URL + encodeURIComponent(realUrl); // USE PROXY
+    // FIX: ADDED -latest
+    const realUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+    const url = PROXY_URL + encodeURIComponent(realUrl);
     
     const history = Array.from(document.querySelectorAll('.bubble')).slice(0,-1).map(b => {
       const isUser = b.classList.contains('user');
@@ -114,8 +116,10 @@ window.handleMessageSending=async()=>{
     if(data.candidates && data.candidates[0]){
       const reply = data.candidates[0].content.parts[0].text;
       typeWriter(document.getElementById(aiId), reply);
+    } else if(data.error) {
+      typeWriter(document.getElementById(aiId), "Error: " + data.error.message);
     } else {
-      typeWriter(document.getElementById(aiId), "Error: " + JSON.stringify(data));
+      typeWriter(document.getElementById(aiId), "Error: No response. Try 'gemini-2.0-flash'");
     }
   } catch(err) {
     document.getElementById(aiId).innerText = "Network Error: " + err.message;
