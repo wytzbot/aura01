@@ -163,11 +163,16 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:'You are AURA. Be human, warm, use emojis. If user uploads image, describe it. Use # H1 ## H2, tables, ```code```.'},
-       ...getAllMessages(), {role:'user', content: prompt}
+          {role:'system', content:'You are AURA. Be human, warm, use emojis. Use # H1 ## H2.'},
+      ...getAllMessages(), {role:'user', content: prompt}
         ]})
       });
-      if(!res.ok) throw new Error("Server Error");
+      
+      if(!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Server Error");
+      }
+
       const reader = res.body.getReader();
       let text = '';
       while(true) {
@@ -179,10 +184,9 @@
       }
       saveChat();
     } catch(err) {
-      contentDiv.innerText = "A server error occurred. Tap Redo to try again.";
+      contentDiv.innerText = "Error: " + err.message; // NOW WE SEE REAL ERROR
     }
-  }
-
+    }
   function getAllMessages() {
     return [...chat.children].map(b => ({
       role: b.classList.contains('bubble-user')? 'user' : 'assistant',
