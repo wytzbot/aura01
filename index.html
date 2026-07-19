@@ -2,66 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>AURA AI</title>
 <style>
-:root{
-  --bg:#030303; --card:#0f0f0f; --text:#F5F5F5; --muted:#999;
-  --orange:#FF7A00; --orange-dark:#FF4500; --border:#1a1a1a;
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:"Inter",system-ui,sans-serif}
-html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
-#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+  :root{
+    --bg:#030303; --text:#F5F5F5; --muted:#999;
+    --orange:#FF7A00; --orange-dark:#FF4500; --border:#1a1a1a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Inter",system-ui,sans-serif}
+  html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none}
 .particle{position:absolute;width:4px;height:4px;background:radial-gradient(var(--orange),transparent);border-radius:50%;animation:float 20s infinite;opacity:0.3}
-@keyframes float{0%{transform:translateY(100vh) scale(0)}50%{opacity:0.6}100%{transform:translateY(-100vh) scale(1.5)}}
+  @keyframes float{0%{transform:translateY(100vh) scale(0)}50%{opacity:0.6}100%{transform:translateY(-100vh) scale(1.5)}}
 .glow{position:fixed;top:50%;left:50%;width:600px;height:600px;background:radial-gradient(circle, #FF7A0020, transparent 70%);transform:translate(-50%,-50%);animation:pulse 4s infinite;z-index:0}
-@keyframes pulse{0%,100%{opacity:0.3;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.6;transform:translate(-50%,-50%) scale(1.2)}}
-#authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;position:relative;z-index:2;padding:20px}
-#authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark),var(--orange));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2.8rem;font-weight:900;animation:bounce 2s infinite, gradientMove 3s infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
-@keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-.auth-box{background:rgba(17,17,17,0.8);backdrop-filter:blur(20px);padding:30px;border-radius:20px;width:100%;max-width:420px;border:1px solid var(--border);animation:fadeInUp 0.8s;box-shadow:0 0 40px #FF7A0010}
-.auth-box input{width:100%;padding:14px;margin:10px 0;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none;transition:0.2s}
-.auth-box input:focus{border-color:var(--orange);box-shadow:0 0 0 3px #FF7A0030}
-.btn{background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:12px;transition:0.3s}
-.btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px #FF7A0040}
+  @keyframes pulse{0%,100%{opacity:0.3}50%{opacity:0.6}}
+  @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  #authScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;position:relative;z-index:2;padding:20px}
+  #authScreen h1{background:linear-gradient(90deg,var(--orange),var(--orange-dark));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:3rem;font-weight:900;animation:gradientMove 3s infinite}
+.auth-box{background:rgba(17,17,17,0.8);backdrop-filter:blur(20px);padding:30px;border-radius:20px;width:100%;max-width:420px;border:1px solid var(--border);animation:fadeInUp 0.8s}
+.auth-box input{width:100%;padding:14px;margin:10px 0;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none}
+.btn{background:linear-gradient(90deg,var(--orange),var(--orange-dark));border:none;padding:14px;border-radius:10px;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:12px}
 .link{color:var(--orange);cursor:pointer;text-align:center;margin-top:12px;font-size:14px}
-#app{display:none;height:100dvh;width:100vw;position:relative;z-index:2; flex-direction:column}
-.sidebar{position:fixed;left:-300px;top:0;width:300px;height:100dvh;background:rgba(15,15,15,0.9);backdrop-filter:blur(20px);border-right:1px solid var(--border);transition:0.4s cubic-bezier(0.4,0,0.2,1);z-index:20;padding:20px;display:flex;flex-direction:column}
+  #app{display:none;height:100dvh;width:100vw;position:relative;z-index:2; flex-direction:column}
+.sidebar{position:fixed;left:-300px;top:0;width:300px;height:100dvh;background:rgba(15,15,15,0.9);backdrop-filter:blur(20px);border-right:1px solid var(--border);transition:0.4s;z-index:20;padding:20px;display:flex;flex-direction:column}
 .sidebar.open{left:0}
 .sidebar h2{background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;font-size:1.8rem}
 .sidebar input{width:100%;padding:12px;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);margin:12px 0;outline:none}
 .chat-history{flex:1;overflow-y:auto}
-.history-item{padding:12px;border-radius:10px;cursor:pointer;margin:6px 0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:0.2s}
-.history-item:hover{background:#1a1a1a;transform:translateX(5px)}
-.footer-links{font-size:12px;color:var(--muted);margin-top:15px}
+.history-item{padding:12px;border-radius:10px;cursor:pointer;margin:6px 0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .main{height:100dvh;display:flex;flex-direction:column}
 .topbar{padding:15px 20px;display:flex;align-items:center;border-bottom:1px solid var(--border);background:rgba(3,3,3,0.8);backdrop-filter:blur(10px)}
-.menu-btn{font-size:26px;cursor:pointer;margin-right:15px;color:var(--orange);transition:0.2s}
-.menu-btn:hover{transform:rotate(90deg)}
-.chat-area{flex:1;overflow-y:auto;padding:20px 20px 100px 20px;display:flex;flex-direction:column;align-items:center;scroll-behavior:smooth}
+.menu-btn{font-size:26px;cursor:pointer;margin-right:15px;color:var(--orange)}
+.chat-area{flex:1;overflow-y:auto;padding:20px 20px 120px 20px;display:flex;flex-direction:column;align-items:center}
 .welcome{animation:fadeInUp 1s;text-align:center;margin-top:8vh;width:100%;max-width:700px}
-.welcome h1{font-size:2.8rem;background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradientMove 4s infinite}
+.welcome h1{font-size:2.8rem;background:linear-gradient(90deg,var(--orange),var(--orange-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .typing-text{color:var(--muted);height:30px;margin-top:10px}
 .suggestions{display:flex;gap:10px;margin-top:25px;flex-wrap:wrap;justify-content:center}
-.suggestion{padding:10px 16px;background:rgba(17,17,17,0.8);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:25px;cursor:pointer;transition:0.3s;font-size:14px}
-.suggestion:hover{border-color:var(--orange);transform:translateY(-4px);box-shadow:0 10px 25px #FF7A0020}
-.messages{width:100%;max-width:850px;display:flex;flex-direction:column;padding-bottom:20px}
+.suggestion{padding:10px 16px;background:rgba(17,17,17,0.8);border:1px solid var(--border);border-radius:25px;cursor:pointer;font-size:14px}
+.messages{width:100%;max-width:850px;display:flex;flex-direction:column}
 .bubble{padding:16px 20px;border-radius:18px;margin:10px 0;max-width:85%;line-height:1.7;animation:fadeInUp 0.4s;white-space:pre-wrap}
-.user{align-self:flex-end;background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff;box-shadow:0 5px 20px #FF7A0030}
-.ai{align-self:flex-start;background:rgba(17,17,17,0.8);backdrop-filter:blur(10px);border:1px solid var(--border)}
-.input-area{padding:12px 15px 12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);backdrop-filter:blur(10px);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-.input-box{flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:20px;padding:8px 12px;display:flex;gap:10px;align-items:center;transition:0.2s}
-.input-box:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px #FF7A0030}
+.user{align-self:flex-end;background:linear-gradient(135deg,var(--orange),var(--orange-dark));color:#fff}
+.ai{align-self:flex-start;background:rgba(17,17,17,0.8);border:1px solid var(--border)}
+.input-area{padding:12px 15px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;max-width:850px;margin:0 auto;width:100%;background:rgba(3,3,3,0.95);backdrop-filter:blur(10px);position:fixed;bottom:0;left:0;right:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.input-box{flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:20px;padding:8px 12px;display:flex;gap:10px;align-items:center}
 .input-box textarea{flex:1;background:transparent;border:none;color:var(--text);resize:none;outline:none;max-height:150px;font-size:15px}
-.icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;transition:0.2s}
-.icon-btn:hover{color:var(--orange);transform:scale(1.1)}
-.send{background:linear-gradient(135deg,var(--orange),var(--orange-dark));border:none;width:42px;height:42px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;transition:0.3s}
-.send:hover{transform:scale(1.1) rotate(10deg);box-shadow:0 5px 20px #FF7A0040}
-.overlay{position:fixed;inset:0;background:#0008;display:none;z-index:10;backdrop-filter:blur(5px)}
-.overlay.show{display:block}
-  </style>
+.send{background:linear-gradient(135deg,var(--orange),var(--orange-dark));border:none;width:42px;height:42px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px}
+</style>
 </head>
 <body>
 <div id="particles"></div>
@@ -75,23 +62,13 @@ html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
     <input id="password" type="password" placeholder="Password">
     <button class="btn" onclick="login()">Login</button>
     <button class="btn" onclick="signup()">Sign Up</button>
-    <div class="link" onclick="resetPassword()">Forgot Password?</div>
   </div>
 </div>
 
 <div id="app">
-  <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-  <div class="sidebar" id="sidebar">
-    <h2>AURA AI</h2>
-    <button class="btn" onclick="newChat()">+ New Chat</button>
-    <input id="searchChat" placeholder="Search chats..." oninput="searchChats()">
-    <div class="chat-history" id="chatHistory">Loading...</div>
-    <div class="footer-links"><p>Privacy Policy</p><p>Terms of Service</p><p>About AURA</p></div>
-  </div>
-
   <div class="main">
     <div class="topbar"><div class="menu-btn" onclick="toggleMenu()">☰</div><h3>AURA AI</h3></div>
-    <div class="chat-area" id="chatArea" onclick="if(window.innerWidth<900)toggleMenu(false)">
+    <div class="chat-area" id="chatArea">
       <div class="welcome" id="welcome">
         <h1>Hello</h1>
         <p class="typing-text" id="typingText"></p>
@@ -101,7 +78,6 @@ html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
     </div>
     <div class="input-area">
       <div class="input-box">
-        <button class="icon-btn" onclick="attachFile()">📎</button>
         <textarea id="chatInput" placeholder="Message AURA AI..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();handleMessageSending()}"></textarea>
       </div>
       <button class="send" onclick="handleMessageSending()">➤</button>
@@ -111,12 +87,14 @@ html, body{height:100%; background:var(--bg);color:var(--text);overflow:hidden}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, setDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-for(let i=0;i<20;i++){let p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';p.style.animationDuration=15+Math.random()*10+'s';document.getElementById('particles').appendChild(p)}
+// BACKGROUND
+for(let i=0;i<15;i++){let p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';p.style.animationDuration=15+Math.random()*10+'s';document.getElementById('particles').appendChild(p)}
 
-const typingPhrases = ["Your AI Assistant", "Fast. Smart. Creative.", "Ask me anything"];
+// TYPING
+const typingPhrases = ["Your AI Assistant", "Fast. Smart. Creative."];
 let tIndex=0, char=0;
 function typeText(){
   const el=document.getElementById('typingText');
@@ -125,71 +103,58 @@ function typeText(){
 }
 typeText();
 
+const GEMINI_API_KEY = "AIzaSyAF4LXEdJ3P3I9tVMIRgX0-Mlr8ali8fcU"; // YOUR KEY IS HERE
+
 const firebaseConfig = {
   apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
   authDomain: "my-wyticle-id.firebaseapp.com",
   projectId: "my-wyticle-id",
   storageBucket: "my-wyticle-id.firebasestorage.app",
   messagingSenderId: "634169882815",
-  appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
-  measurementId: "G-7X84RSMH58"
+  appId: "1:634169882815:web:486d39a13ce2f855c0ae0a"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentUser = null; let activeChatId = null; let allChats = [];
+let currentUser = null; let activeChatId = null;
 
-const suggestions = ["Explain quantum physics", "Write me a CV", "Plan a trip to Dubai", "Code a website for me"];
-const rotating = ["Your AI Assistant", "Fast. Smart. Private.", "Ask me anything"];
-let rotIndex=0; 
-document.getElementById('rotatingText').innerText=rotating[0];
-setInterval(()=>{document.getElementById('rotatingText').innerText=rotating[rotIndex++%rotating.length]},2500);
+const suggestions = ["Explain quantum physics", "Write me a CV", "Plan a trip to Dubai"];
 document.getElementById('suggestions').innerHTML = suggestions.map(s=>`<div class="suggestion" onclick="fillSuggestion('${s}')">${s}</div>`).join('');
 
 window.login = async()=>{try{await signInWithEmailAndPassword(auth,email.value,password.value)}catch(e){alert(e.message)}}
 window.signup = async()=>{try{await createUserWithEmailAndPassword(auth,email.value,password.value)}catch(e){alert(e.message)}}
-window.resetPassword = async()=>{if(!email.value)return alert("Enter email first");try{await sendPasswordResetEmail(auth,email.value);alert("Reset email sent")}catch(e){alert(e.message)}}
-onAuthStateChanged(auth,user=>{if(user){currentUser=user;document.getElementById('authScreen').style.display='none';document.getElementById('app').style.display='block';loadChats()}else{document.getElementById('authScreen').style.display='flex';document.getElementById('app').style.display='none'}})
+onAuthStateChanged(auth,user=>{if(user){currentUser=user;document.getElementById('authScreen').style.display='none';document.getElementById('app').style.display='flex';}else{document.getElementById('authScreen').style.display='flex';document.getElementById('app').style.display='none'}})
 
-window.toggleMenu=(force)=>{const s=document.getElementById('sidebar');const o=document.getElementById('overlay');if(force===false){s.classList.remove('open');o.classList.remove('show')}else{s.classList.toggle('open');o.classList.toggle('show')}}
-window.newChat=()=>{activeChatId=null;document.getElementById('messages').innerHTML='';document.getElementById('welcome').style.display='block';toggleMenu(false)}
 window.fillSuggestion=(t)=>{document.getElementById('chatInput').value=t;handleMessageSending()}
-
-async function loadChats(){
-  const q=query(collection(db,"users",currentUser.uid,"chats"),orderBy("createdAt","desc"));
-  const snap=await getDocs(q); allChats=snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderChats(allChats)
-}
-function renderChats(chats){document.getElementById('chatHistory').innerHTML=chats.length? chats.map(c=>`<div class="history-item" onclick="openChat('${c.id}')">${c.title}</div>`).join('') : '<p style="color:var(--muted)">No chats yet</p>'}
-window.searchChats=()=>{const v=document.getElementById('searchChat').value.toLowerCase();renderChats(allChats.filter(c=>c.title.toLowerCase().includes(v)))}
-window.openChat=async(id)=>{activeChatId=id;document.getElementById('welcome').style.display='none';toggleMenu(false)}
 
 window.handleMessageSending=async()=>{
   const text=document.getElementById('chatInput').value.trim();if(!text)return;
   document.getElementById('chatInput').value='';
   document.getElementById('welcome').style.display='none';
   addBubble('user',text);
-
-  if(!activeChatId){
-    activeChatId=`chat_${Date.now()}`;
-    await setDoc(doc(db,"users",currentUser.uid,"chats",activeChatId),{title:text.slice(0,40),createdAt:serverTimestamp()});
-    loadChats();
-  }
   const aiId=addBubble('ai','Thinking...');
 
-  const history = Array.from(document.querySelectorAll('.bubble')).slice(0,-1).map(b => {
-    const isUser = b.classList.contains('user');
-    return { role: isUser? 'user' : 'model', parts: [{ text: b.innerText }] };
-  });
-
+  // BROWSER DIRECT CALL TO GEMINI
   try {
-    // FIX: RELATIVE URL
-    const res=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history})});
-    const data=await res.json();
-    typeWriter(document.getElementById(aiId), data.response || "No response");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
+    const history = Array.from(document.querySelectorAll('.bubble')).slice(0,-1).map(b => {
+      const isUser = b.classList.contains('user');
+      return { role: isUser? 'user' : 'model', parts: [{ text: b.innerText }] };
+    });
+    history.push({role: 'user', parts: [{text: text}]});
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({contents: history})
+    });
+    const data = await res.json();
+    const reply = data.candidates[0].content.parts[0].text;
+    typeWriter(document.getElementById(aiId), reply);
   } catch(err) {
-    document.getElementById(aiId).innerText = "Error: Failed to fetch. Check Vercel logs.";
+    document.getElementById(aiId).innerText = "Error: " + err.message;
   }
 }
 
@@ -204,7 +169,6 @@ function addBubble(role,text){
   return id
 }
 function typeWriter(el, text){let i=0;el.innerText='';let timer=setInterval(()=>{el.innerText+=text[i++];document.getElementById('chatArea').scrollTop=99999;if(i>=text.length)clearInterval(timer)},15)}
-window.attachFile=()=>alert("Attachment: Connect Firebase Storage next")
 </script>
 </body>
-      </html>
+  </html>
