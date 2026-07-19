@@ -1,188 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>AURA AI Pro</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FF7A00">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+import Groq from "groq-sdk";
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-<style>
-  body { background: #020202; color: #e5e5e5; font-family: system-ui; overscroll-behavior-y: contain; }
-.aura-orange { color: #FF7A00; }
-.bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; }
-.bubble-ai { background: #111; }
-.prose h1 { font-size: 1.5rem; font-weight: 800; margin: 1rem 0.5rem; }
-.prose h2 { font-size: 1.2rem; font-weight: 700; margin:.8rem 0.4rem; }
-.prose p { margin:.5rem 0; line-height: 1.6; }
-.prose a { color: #22c55e; text-decoration: underline; }
-.prose ul { list-style: disc; padding-left: 1.5rem; }
-.prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size:.9rem; }
-.prose th,.prose td { border: 1px solid #333; padding: 8px; text-align: left; }
-.prose th { background: #1a1a1a; }
-.code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 1rem 0; overflow-x: auto; position: relative; }
-.code-block button { position: absolute; top: 8px; right: 8px; }
-.sidebar { transition: transform.3s ease; }
-.sidebar-hidden { transform: translateX(-100%); }
-.action-btn { opacity:.6; }.action-btn:hover { opacity:1; }
-</style>
-</head>
-<body class="h-screen flex overflow-hidden">
+const memoryCache = new Map(); // RAM cache
 
-<!-- SIDEBAR -->
-<div id="sidebar" class="sidebar w-72 bg-[#0a0a0a] border-r border-[#222] p-4 flex-col absolute md:relative h-full z-20">
-  <button onclick="newChat()" class="bg-[#FF7A00] text-black font-bold py-2 rounded-lg mb-4">+ New Chat</button>
-  <input id="search" oninput="searchChats()" placeholder="Search chats..." class="bg-[#111] p-2 rounded mb-4 text-sm border-[#333] outline-none focus:border-[#FF7A00]">
-  <div id="chatList" class="overflow-y-auto flex-1 space-y-1"></div>
-  <div id="cacheStat" class="text-xs text-gray-500 mt-2">Cache: 0%</div>
-</div>
-<div id="overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-10 md:hidden"></div>
+function hashPrompt(messages) {
+  return btoa(JSON.stringify(messages)).slice(0,50); // simple hash
+}
 
-<!-- MAIN -->
-<div class="flex-1 flex flex-col">
-  <header class="p-4 border-b border-[#222] flex justify-between items-center">
-    <button onclick="toggleSidebar()" class="md:hidden text-xl">☰</button>
-    <h1 class="text-xl font-bold aura-orange">AURA AI Pro</h1>
-    <div></div>
-  </header>
+export default async function handler(req, res) {
+  if (req.method!== 'POST') return res.status(405).json({ error: 'POST only' });
+  const { messages } = req.body;
+  const promptHash = hashPrompt(messages);
 
-  <div id="pull" class="text-center text-xs text-gray-500 py-2">↓ Pull to refresh</div>
-  <div id="chat" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Transfer-Encoding', 'chunked');
 
-  <form id="form" class="p-4 border-t border-[#222] flex gap-2 bg-[#020202]">
-    <input id="input" autocomplete="off" class="flex-1 bg-[#111] p-3 rounded-lg border border-[#333] focus:border-[#FF7A00] outline-none" placeholder="Message AURA...">
-    <button type="submit" class="bg-[#FF7A00] text-black px-5 rounded-lg font-bold">Send</button>
-  </form>
-</div>
+  try {
+    // 1. MEMORY CACHE
+    if (memoryCache.has(promptHash)) {
+      res.setHeader('X-Cache', 'HIT');
+      res.write(memoryCache.get(promptHash));
+      return res.end();
+    }
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    // 2. FIRESTORE CACHE
+    const { initializeApp } = await import("firebase/app");
+    const { getFirestore, doc, getDoc, setDoc } = await import("firebase/firestore");
+    const app = initializeApp({
+      apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+      projectId: "my-wyticle-id",
+    });
+    const db = getFirestore(app);
+    const cacheRef = doc(db, "cache", promptHash);
+    const cacheSnap = await getDoc(cacheRef);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
-    authDomain: "my-wyticle-id.firebaseapp.com",
-    projectId: "my-wyticle-id",
-    storageBucket: "my-wyticle-id.firebasestorage.app",
-    messagingSenderId: "634169882815",
-    appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
-    measurementId: "G-7X84RSMH58"
-  };
+    if (cacheSnap.exists()) {
+      res.setHeader('X-Cache', 'HIT');
+      const cached = cacheSnap.data().response;
+      memoryCache.set(promptHash, cached);
+      res.write(cached);
+      return res.end();
+    }
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const db = getFirestore(app);
-
-  let currentChatId = Date.now().toString();
-  let chats = [];
-  let cacheHits = 0, totalReqs = 0;
-
-  // MARKDOWN
-  marked.setOptions({ breaks: true });
-  const renderer = new marked.Renderer();
-  renderer.code = (code) => `<div class="code-block"><button onclick="copyCode(this)" class="text-xs aura-orange">Copy</button><pre><code>${code}</code></pre></div>`;
-  renderer.link = (href, title, text) => `<a href="${href}" target="_blank">${text}</a>`;
-  marked.setOptions({ renderer });
-
-  function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
-
-  // CHAT
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const msg = input.value.trim();
-    if(!msg) return;
-    addMessage('user', msg);
-    input.value = '';
-    await streamAI(msg);
-  }
-
-  function addMessage(role, content) {
-    const div = document.createElement('div');
-    div.className = `max-w-[85%] p-3 rounded-lg ${role === 'user'? 'bubble-user ml-auto' : 'bubble-ai mr-auto'}`;
-    div.innerHTML = `<div class="prose">${renderMessage(content)}</div>`;
-    div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-400">
-      <button class="action-btn" onclick="copyMsg(this)">Copy</button>
-      ${role === 'ai'? '<button class="action-btn" onclick="redo(this)">Redo</button>' : '<button class="action-btn" onclick="editMsg(this)">Edit</button>'}
-      <button class="action-btn" onclick="delMsg(this)">Delete</button>
-    </div>`;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div;
-  }
-
-  async function streamAI(prompt) {
-    totalReqs++;
-    const bubble = addMessage('ai', '');
-    const contentDiv = bubble.querySelector('.prose');
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({messages: [
-        {role:'system', content:'You are AURA, a helpful AI assistant. Be human, warm, use emojis naturally. Use # H1 and ## H2 for headings. Use tables and lists. Format code in ``` blocks.'},
-      ...getAllMessages(), {role:'user', content: prompt}
-      ]})
+    // 3. GROQ CALL
+    res.setHeader('X-Cache', 'MISS');
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: messages,
+      stream: true,
     });
 
-    if(res.headers.get('X-Cache') === 'HIT') cacheHits++;
-    updateCacheStat();
-
-    const reader = res.body.getReader();
-    let text = '';
-    while(true) {
-      const {done, value} = await reader.read();
-      if(done) break;
-      text += new TextDecoder().decode(value);
-      contentDiv.innerHTML = renderMessage(text);
+    let fullResponse = '';
+    for await (const chunk of completion) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      fullResponse += content;
+      res.write(content);
     }
-    saveChat();
+
+    // 4. SAVE TO CACHE
+    memoryCache.set(promptHash, fullResponse);
+    await setDoc(cacheRef, { response: fullResponse, created: Date.now() });
+    res.end();
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  function getAllMessages() {
-    return [...chat.children].map(b => ({
-      role: b.classList.contains('bubble-user')? 'user' : 'assistant',
-      content: b.querySelector('.prose').innerText
-    }));
-  }
-
-  // FIREBASE
-  async function saveChat() {
-    const title = chat.querySelector('.bubble-user.prose')?.innerText.slice(0,50) || 'New Chat';
-    await setDoc(doc(db, "chats", currentChatId), {messages: chat.innerHTML, title, updated: Date.now()});
-    loadChats();
-  }
-
-  async function loadChats() {
-    const q = query(collection(db, "chats"), orderBy("updated","desc"));
-    const snap = await getDocs(q);
-    chats = snap.docs.map(d => ({id: d.id,...d.data()}));
-    chatList.innerHTML = chats.map(c =>
-      `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`
-    ).join('');
-  }
-
-  function openChat(id) { currentChatId = id; const c = chats.find(x => x.id === id); chat.innerHTML = c.messages; toggleSidebar(); }
-  function newChat() { currentChatId = Date.now().toString(); chat.innerHTML = ''; toggleSidebar(); }
-  function searchChats() { const term = search.value.toLowerCase(); chatList.innerHTML = chats.filter(c => c.title.toLowerCase().includes(term)).map(c => `<div onclick="openChat('${c.id}')" class="p-2 hover:bg-[#111] rounded cursor-pointer truncate text-sm">${c.title}</div>`).join(''); }
-  function updateCacheStat() { const pct = totalReqs? Math.round((cacheHits/totalReqs)*100) : 0; cacheStat.innerText = `Cache: ${pct}%`; }
-
-  // UTILS
-  window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble-user,.bubble-ai').querySelector('.prose').innerText);
-  window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
-  window.delMsg = (btn) => { btn.closest('.bubble-user,.bubble-ai').remove(); saveChat(); }
-  window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
-  window.editMsg = () => { /* add edit prompt later */ }
-  window.toggleSidebar = () => { sidebar.classList.toggle('sidebar-hidden'); overlay.classList.toggle('hidden'); }
-
-  // PULL TO REFRESH
-  let startY = 0;
-  chat.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-  chat.addEventListener('touchend', e => { if(e.changedTouches[0].clientY - startY > 100 && chat.scrollTop === 0) location.reload(); });
-
-  loadChats();
-</script>
-</body>
-</html>
+    }
