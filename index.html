@@ -2,103 +2,325 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AURA AI</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+<!-- Firebase Production Production-grade Compat Components -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
 <style>
-  body { background: #000; color: #fff; margin:0; }
-.orange { color: #FF7A00; }
-.btn-orange { background: #FF7A00; color: #000; }
-.bubble { padding: 12px; margin: 8px 0; border-radius: 12px; max-width: 90%; }
-.user { background: #222; border: 1px solid #FF7A00; margin-left: auto; }
-.ai { background: #111; margin-right: auto; }
-  #chat { height: calc(100vh - 160px); overflow-y: auto; padding: 10px; }
+  body { 
+    background: #050505; 
+    color: #fff; 
+    margin: 0; 
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  .text-gradient {
+    background: linear-gradient(90deg, #FF7A00, #ff9e44);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .bg-orange { 
+    background: #FF7A00; 
+    color: #000; 
+    transition: transform 0.2s, opacity 0.2s; 
+  }
+  .bg-orange:active { transform: scale(0.95); }
+  .bg-orange:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .bubble { 
+    padding: 12px 16px; 
+    margin: 8px 0; 
+    border-radius: 20px; 
+    max-width: 85%; 
+    line-height: 1.5;
+    word-wrap: break-word;
+    animation: fadeIn 0.25s ease-out forwards;
+  }
+  
+  .user { 
+    background: #1a1a1a; 
+    border: 1px solid #FF7A00; 
+    margin-left: auto; 
+    border-bottom-right-radius: 4px;
+  }
+  
+  .ai { 
+    background: #222; 
+    margin-right: auto; 
+    border-bottom-left-radius: 4px;
+  }
+  
+  .bubble p { margin: 0; }
+  .bubble pre { background: #000; padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 8px; font-size: 0.9em; }
+  .bubble code { font-family: monospace; color: #FF7A00; }
+  
+  #chat { 
+    height: calc(100dvh - 140px);
+    overflow-y: auto; 
+    padding: 16px; 
+    scroll-behavior: smooth;
+  }
+  
+  .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 10px; }
 </style>
 </head>
-<body>
+<body class="h-[100dvh] overflow-hidden">
 
-<div id="welcome" class="h-screen flex flex-col items-center justify-center p-6 text-center">
-  <h1 class="text-5xl font-extrabold orange mb-3">AURA</h1>
-  <p class="text-gray-400 mb-8">Your funny, smart AI bestie 😎</p>
-  <button id="startBtn" class="btn-orange font-bold py-4 px-10 rounded-xl text-lg">Start Chatting</button>
+<!-- Entry Welcome Component -->
+<div id="welcome" class="h-full flex flex-col items-center justify-center p-6 text-center bg-[#050505]">
+  <div class="animate-pulse-slow">
+    <h1 class="text-6xl font-extrabold text-gradient mb-4 tracking-tight">AURA</h1>
+  </div>
+  <p class="text-gray-400 mb-10 text-lg">Your funny, smart AI bestie 😎</p>
+  <button id="startBtn" class="bg-orange font-bold py-4 px-12 rounded-full text-lg shadow-[0_0_25px_rgba(255,122,0,0.25)]">Start Chatting</button>
 </div>
 
-<div id="chatPage" class="hidden h-screen flex-col">
-  <header class="p-4 border-b border-gray-800 flex justify-between">
-    <button id="backBtn" class="text-2xl">←</button>
-    <h1 class="text-xl font-bold orange">AURA</h1>
-    <button id="newBtn" class="text-2xl">+</button>
+<!-- Main Core Chatpage View Layer -->
+<div id="chatPage" class="hidden h-full flex-col">
+  <header class="p-4 border-b border-gray-800 flex justify-between items-center bg-[#0a0a0a] z-10">
+    <button id="backBtn" class="text-2xl text-gray-400 hover:text-white transition px-2">←</button>
+    <h1 class="text-xl font-bold text-gradient">AURA</h1>
+    <button id="newBtn" class="text-2xl text-gray-400 hover:text-white transition px-2" title="Clear Chat Entirely">🗑️</button>
   </header>
 
-  <div id="chat"></div>
+  <!-- Message Stream Box -->
+  <div id="chat" class="flex-1 w-full max-w-3xl mx-auto"></div>
 
-  <div class="p-3 border-t border-gray-800 bg-black">
-    <div id="preview" class="hidden mb-2"></div>
-    <form id="form" class="flex gap-2 items-center">
-      <button type="button" id="attachBtn" class="text-2xl p-2">📎</button>
-      <button type="button" id="cameraBtn" class="text-2xl p-2">📷</button>
-      <input type="file" id="fileInput" accept="image/*" class="hidden">
-      <input id="input" class="flex-1 bg-[#111] p-3 rounded-xl outline-none" placeholder="Message AURA...">
-      <button type="submit" class="btn-orange p-3 rounded-xl font-bold">➤</button>
-    </form>
+  <!-- Interactive Control Deck Form -->
+  <div class="p-3 border-t border-gray-800 bg-[#0a0a0a] w-full pb-safe">
+    <div class="max-w-3xl mx-auto">
+      <div id="previewContainer" class="hidden mb-2 relative inline-block">
+        <img id="previewImg" src="" class="max-h-24 rounded-lg border border-gray-700 shadow-lg">
+        <button id="removeImgBtn" type="button" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md">✕</button>
+      </div>
+      
+      <form id="form" class="flex gap-2 items-end">
+        <div class="flex bg-[#1a1a1a] rounded-2xl flex-1 border border-gray-800 focus-within:border-[#FF7A00] transition-colors duration-200">
+          <button type="button" id="attachBtn" class="p-3 text-xl text-gray-400 hover:text-[#FF7A00] transition-colors">📎</button>
+          <button type="button" id="cameraBtn" class="p-3 text-xl text-gray-400 hover:text-[#FF7A00] transition-colors hidden sm:block">📷</button>
+          <input type="file" id="fileInput" accept="image/*" class="hidden">
+          
+          <input id="input" autocomplete="off" class="flex-1 bg-transparent p-3 outline-none text-white w-full" placeholder="Message AURA...">
+        </div>
+        <button type="submit" id="sendBtn" class="bg-orange p-3 rounded-2xl font-bold w-12 h-12 flex items-center justify-center shadow-md">➤</button>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
-  let attachedFile = null;
+  // Initializing Cloud infrastructure variables using specific custom web parameters
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+    authDomain: "my-wyticle-id.firebaseapp.com",
+    projectId: "my-wyticle-id",
+    storageBucket: "my-wyticle-id.firebasestorage.app",
+    messagingSenderId: "634169882815",
+    appId: "1:634169882815:web:486d39a13ce2f855c0ae0a"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Establish standard unique dynamic session IDs
+  let userId = localStorage.getItem('aura_user_id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('aura_user_id', userId);
+  }
+
+  let base64Image = null;
+  let chatHistory = []; 
+
   const welcome = document.getElementById('welcome');
   const chatPage = document.getElementById('chatPage');
   const chat = document.getElementById('chat');
+  const inputField = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+  const previewContainer = document.getElementById('previewContainer');
+  const previewImg = document.getElementById('previewImg');
 
-  document.getElementById('startBtn').onclick = () => { welcome.style.display = 'none'; chatPage.style.display = 'flex'; }
-  document.getElementById('backBtn').onclick = () => { chatPage.style.display = 'none'; welcome.style.display = 'flex'; }
-  document.getElementById('newBtn').onclick = () => { chat.innerHTML = ''; }
+  // Load chat session directly from Firestore on mount
+  async function loadChatHistory() {
+    try {
+      const doc = await db.collection('chats').doc(userId).get();
+      if (doc.exists) {
+        chatHistory = doc.data().messages || [];
+        chat.innerHTML = '';
+        
+        chatHistory.forEach(msg => {
+          let renderContent = '';
+          if (Array.isArray(msg.content)) {
+            const textObj = msg.content.find(c => c.type === 'text');
+            const imgObj = msg.content.find(c => c.type === 'image_url');
+            
+            if (imgObj) {
+              renderContent += `<img src="${imgObj.image_url.url}" style="max-height:150px; border-radius:8px; margin-bottom:8px;"><br>`;
+            }
+            if (textObj) renderContent += textObj.text;
+          } else {
+            renderContent = msg.content;
+          }
+          addMsgToUI(msg.role === 'assistant' ? 'ai' : 'user', renderContent);
+        });
+      }
+    } catch (err) {
+      console.error("Cloud synchronization retrieval crash: ", err);
+    }
+  }
 
+  // Push latest memory arrays directly to the remote active Firestore cluster
+  async function saveChatHistory() {
+    try {
+      await db.collection('chats').doc(userId).set({
+        messages: chatHistory,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (err) {
+      console.error("Cloud synchronization save crash: ", err);
+    }
+  }
+
+  // Trigger cache check immediately on boot execution
+  loadChatHistory();
+
+  // Navigation Event Handling
+  document.getElementById('startBtn').onclick = () => { 
+    welcome.classList.add('hidden'); 
+    chatPage.classList.remove('hidden'); 
+    chatPage.classList.add('flex');
+    setTimeout(() => inputField.focus(), 100);
+  }
+  
+  document.getElementById('backBtn').onclick = () => { 
+    chatPage.classList.add('hidden'); 
+    chatPage.classList.remove('flex');
+    welcome.classList.remove('hidden'); 
+  }
+  
+  document.getElementById('newBtn').onclick = async () => { 
+    if(confirm('Clear this chat session forever?')) {
+      chat.innerHTML = ''; 
+      chatHistory = [];
+      clearImage();
+      await db.collection('chats').doc(userId).delete();
+    }
+  }
+
+  // Multimedia file staging processes
   document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
-  document.getElementById('cameraBtn').onclick = () => { document.getElementById('fileInput').setAttribute('capture', 'environment'); document.getElementById('fileInput').click(); }
+  document.getElementById('cameraBtn').onclick = () => { 
+    document.getElementById('fileInput').setAttribute('capture', 'environment'); 
+    document.getElementById('fileInput').click(); 
+  }
+  
+  document.getElementById('removeImgBtn').onclick = clearImage;
+
+  function clearImage() {
+    base64Image = null;
+    document.getElementById('fileInput').value = '';
+    previewContainer.classList.add('hidden');
+  }
+
   document.getElementById('fileInput').onchange = (e) => {
     const file = e.target.files[0];
-    if(file) { attachedFile = file; const reader = new FileReader(); reader.onload = (ev) => { document.getElementById('preview').innerHTML = `<img src="${ev.target.result}" style="max-width:100px;border-radius:8px">`; document.getElementById('preview').classList.remove('hidden'); } reader.readAsDataURL(file); }
+    if(file) { 
+      const reader = new FileReader(); 
+      reader.onload = (ev) => { 
+        base64Image = ev.target.result;
+        previewImg.src = base64Image; 
+        previewContainer.classList.remove('hidden'); 
+      } 
+      reader.readAsDataURL(file); 
+    }
   }
 
+  // Submit operations handling workflow loops
   document.getElementById('form').onsubmit = async (e) => {
     e.preventDefault();
-    const msg = document.getElementById('input').value.trim();
-    if(!msg &&!attachedFile) return;
-    addMsg('user', attachedFile? `[Image] ${msg}` : msg);
-    document.getElementById('input').value = ''; document.getElementById('preview').classList.add('hidden');
-    addMsg('ai', 'Thinking... 😎');
-    await callAI(msg);
-    attachedFile = null;
+    const textPrompt = inputField.value.trim();
+    if(!textPrompt && !base64Image) return;
+
+    let uiMessage = textPrompt;
+    if (base64Image) {
+      uiMessage = `<img src="${base64Image}" style="max-height:150px; border-radius:8px; margin-bottom:8px;"><br>` + uiMessage;
+    }
+    
+    addMsgToUI('user', uiMessage);
+    
+    let apiContent;
+    if (base64Image) {
+      apiContent = [
+        { type: "text", text: textPrompt || "Look at this image" },
+        { type: "image_url", image_url: { url: base64Image } }
+      ];
+    } else {
+      apiContent = textPrompt;
+    }
+
+    chatHistory.push({ role: 'user', content: apiContent });
+    await saveChatHistory(); 
+    
+    inputField.value = ''; 
+    clearImage();
+    
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '...';
+    const loadingBubble = addMsgToUI('ai', 'Thinking... 😎');
+    
+    await callAI(loadingBubble);
+    
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '➤';
+    setTimeout(() => inputField.focus(), 10);
   }
 
-  function addMsg(role, text) {
+  function addMsgToUI(role, text) {
     const div = document.createElement('div');
     div.className = `bubble ${role}`;
     div.innerHTML = DOMPurify.sanitize(marked.parse(text));
-    chat.appendChild(div); chat.scrollTop = chat.scrollHeight; return div;
+    chat.appendChild(div); 
+    chat.scrollTop = chat.scrollHeight; 
+    return div;
   }
 
-  // FIXED CALLAI
-  async function callAI(prompt) {
-    const aiBubble = chat.lastChild;
+  async function callAI(aiBubble) {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({messages: [{role:'user', content: prompt}]})
+        body: JSON.stringify({ messages: chatHistory })
       });
       
-      const data = await res.json(); // This was crashing before
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.text || "Failed to fetch valid completion payload.");
+
       aiBubble.innerHTML = DOMPurify.sanitize(marked.parse(data.text));
+      
+      chatHistory.push({ role: 'assistant', content: data.text });
+      await saveChatHistory();
 
     } catch(err) {
-      aiBubble.innerHTML = "Network Error: " + err.message + " 😭 Check if /api/chat deployed";
-      aiBubble.style.color = 'red';
+      aiBubble.innerHTML = DOMPurify.sanitize(`**Network Error:** ${err.message} 😭`);
+      aiBubble.style.borderColor = 'red';
+      aiBubble.style.borderWidth = '1px';
+      chatHistory.pop(); // Revert volatile history state array elements on error loop anomalies
+      await saveChatHistory();
     }
+    chat.scrollTop = chat.scrollHeight;
   }
 </script>
 </body>
-  </html>
+          </html>
