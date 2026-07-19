@@ -11,22 +11,22 @@
 <style>
     * { font-family: 'Inter', sans-serif; }
   html, body { height: 100%; background: #020202; color: #e5e5e5; overflow: hidden; margin:0; }
- .gradient-bg { background: radial-gradient(circle at 50% 20%, #FF7A0020 0%, #020202 50%); }
- .aura-orange { color: #FF7A00; }
- .bubble { max-width: 85%; padding: 14px; border-radius: 16px; word-wrap: break-word; line-height: 1.6; }
- .bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
- .bubble-ai { background: #111; margin-right: auto; }
- .prose a { color: #22c55e; text-decoration: underline; }
- .code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; padding: 14px; margin: 1rem 0; position: relative; }
- .code-block button { position: absolute; top: 8px; right: 8px; background:#222; padding:4px 8px; border-radius:6px; font-size:12px; }
+.gradient-bg { background: radial-gradient(circle at 50% 20%, #FF7A0020 0%, #020202 50%); }
+.aura-orange { color: #FF7A00; }
+.bubble { max-width: 85%; padding: 14px; border-radius: 16px; word-wrap: break-word; line-height: 1.6; }
+.bubble-user { background: #1a1a1a; border: 1px solid #FF7A00; margin-left: auto; }
+.bubble-ai { background: #111; margin-right: auto; }
+.prose a { color: #22c55e; text-decoration: underline; }
+.code-block { background: #0a0a0a; border: 1px solid #333; border-radius: 10px; padding: 14px; margin: 1rem 0; position: relative; }
+.code-block button { position: absolute; top: 8px; right: 8px; background:#222; padding:4px 8px; border-radius:6px; font-size:12px; }
   #chat { height: calc(100dvh - 180px); }
   #inputBar { position: fixed; bottom: 0; left: 0; right: 0; background:linear-gradient(to top, #020202 70%, transparent); padding-bottom: env(safe-area-inset-bottom); }
- .hidden { display: none!important; }
- .send-btn { box-shadow: 0 0 20px #FF7A0040; }
+.hidden { display: none!important; visibility: hidden; opacity: 0; pointer-events: none; } /* FIX 1 */
+.send-btn { box-shadow: 0 0 20px #FF7A0040; }
   #sidebar { position: fixed; top:0; left:0; height:100%; width:280px; background:#050505; border-right:1px solid #222; z-index:50; transform:translateX(-100%); transition:.3s; }
   #sidebar.open { transform:translateX(0); }
   #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#00080; z-index:40; }
- .preview-img { max-width: 100px; max-height: 100px; border-radius: 10px; border: 1px solid #FF7A00; }
+.preview-img { max-width: 100px; max-height: 100px; border-radius: 10px; border: 1px solid #FF7A00; }
 </style>
 </head>
 <body>
@@ -70,11 +70,15 @@
 
   const welcome = document.getElementById('welcome');
   const appDiv = document.getElementById('app');
-  const chat = document.getElementById('chat');
-  const form = document.getElementById('form');
-  const input = document.getElementById('input');
 
-  document.getElementById('startBtn').onclick = () => { welcome.classList.add('hidden'); appDiv.classList.remove('hidden'); history.pushState({page: 'app'}, ''); }
+  // FIX 2: BULLETPROOF BUTTON
+  document.getElementById('startBtn').onclick = () => { 
+    welcome.style.display = 'none'; 
+    appDiv.style.display = 'flex';
+    appDiv.classList.remove('hidden'); 
+    history.pushState({page: 'app'}, '');
+  }
+  
   document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.remove('hidden'); }
   document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.add('hidden'); }
   document.getElementById('attachBtn').onclick = () => document.getElementById('fileInput').click();
@@ -90,12 +94,12 @@
   marked.setOptions({ renderer });
   function renderMessage(text) { return DOMPurify.sanitize(marked.parse(text)); }
 
-  form.addEventListener('submit', async (e) => {
+  document.getElementById('form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const msg = input.value.trim();
+    const msg = document.getElementById('input').value.trim();
     if(!msg &&!attachedFile) return;
     addMessage('user', attachedFile? `[Image] ${msg}` : msg);
-    input.value = ''; document.getElementById('preview').classList.add('hidden');
+    document.getElementById('input').value = ''; document.getElementById('preview').classList.add('hidden');
     await streamAI(msg); attachedFile = null;
   });
 
@@ -104,7 +108,7 @@
     div.className = `bubble ${role === 'user'? 'bubble-user' : 'bubble-ai'}`;
     div.innerHTML = `<div class="prose">${renderMessage(content)}</div>`;
     div.innerHTML += `<div class="flex gap-3 mt-2 text-xs text-gray-400"><button onclick="copyMsg(this)">Copy</button><button onclick="redo()">Redo</button><button onclick="delMsg(this)">Delete</button></div>`;
-    chat.appendChild(div); setTimeout(() => chat.scrollTop = chat.scrollHeight, 100); return div;
+    document.getElementById('chat').appendChild(div); setTimeout(() => document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight, 100); return div;
   }
 
   async function streamAI(prompt) {
@@ -115,8 +119,8 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({messages: [
-          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant. Talk like a friend. Use slang, jokes, and emojis 😎🔥 Be warm, helpful. Use markdown: # H1 ## H2, **bold**, *italic*, tables, and \`\`code\`\`\`. Keep replies short unless asked. If you don't know, say "Bro idk but let's google it together"`},
-         ...getAllMessages(), {role:'user', content: prompt}
+          {role:'system', content:`You are AURA, a human, funny, and slightly sarcastic AI assistant. Talk like a friend. Use slang, jokes, and emojis 😎🔥 Be warm, helpful. Use markdown: # H1 ## H2, **bold**, *italic*, tables, and \`\`code\`\`. Keep replies short unless asked.`},
+        ...getAllMessages(), {role:'user', content: prompt}
         ]})
       });
       if(!res.ok) throw new Error(await res.text());
@@ -127,13 +131,13 @@
         if(done) break;
         text += new TextDecoder().decode(value);
         contentDiv.innerHTML = renderMessage(text);
-        chat.scrollTop = chat.scrollHeight;
+        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
       }
-    } catch(err) { contentDiv.innerText = "AURA crashed: " + err.message + " 😭 Check Vercel logs"; contentDiv.style.color = "#ef4444"; }
+    } catch(err) { contentDiv.innerText = "AURA crashed: " + err.message + " 😭"; contentDiv.style.color = "#ef4444"; }
   }
 
   function getAllMessages() {
-    return [...chat.children].map(b => ({
+    return [...document.getElementById('chat').children].map(b => ({
       role: b.classList.contains('bubble-user')? 'user' : 'assistant',
       content: b.querySelector('.prose').innerText
     }));
@@ -141,8 +145,8 @@
 
   window.copyMsg = (btn) => navigator.clipboard.writeText(btn.closest('.bubble').querySelector('.prose').innerText);
   window.delMsg = (btn) => { btn.closest('.bubble').remove(); }
-  window.redo = () => { const lastUser = [...chat.children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
+  window.redo = () => { const lastUser = [...document.getElementById('chat').children].reverse().find(b => b.classList.contains('bubble-user')); if(lastUser) streamAI(lastUser.querySelector('.prose').innerText); }
   window.copyCode = (btn) => navigator.clipboard.writeText(btn.nextElementSibling.innerText);
 </script>
 </body>
-</html>
+         </html>
