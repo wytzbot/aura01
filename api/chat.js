@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 
 export default async function handler(req, res) {
+  // Enforce rigid JSON headers configuration
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
@@ -29,20 +30,20 @@ export default async function handler(req, res) {
       Array.isArray(msg.content) && msg.content.some(c => c.type === 'image_url')
     );
 
-    // FIXED ENGINE ROUTING: Replacing the decommissioned preview model with the stable, high-performance LLaMA 3.3 70B
+    // Using the stable, high-performance LLaMA 3.3 70B for text/code and 3.2 90B for images
     const modelToUse = hasImage ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [systemMessage, ...messages],
       model: modelToUse,
-      temperature: 0.5, // Keeps output stable, accurate, and structurally correct for programming
-      max_tokens: 3000, // Large context output window for code file generation
+      temperature: 0.5, // Stable code output generation setting
+      max_tokens: 3000, 
     });
 
     let responseText = chatCompletion.choices[0]?.message?.content || "Bro, I got no reply 😭";
     
-    // Server-side parsing cleanups
-    responseText = responseText.replace(/\*\/g, '');
+    // FIXED: Safely removes lingering structural asterisks out of raw string loops without throwing runtime errors
+    responseText = responseText.replace(/\*/g, '');
 
     return res.status(200).json({ text: responseText });
 
@@ -50,4 +51,4 @@ export default async function handler(req, res) {
     console.error("Groq Engine Execution Failure:", error);
     return res.status(500).json({ text: "AURA pipeline exception: " + (error.message || "Unknown error") + " 😵 Check server logs." });
   }
-  }
+                                   }
