@@ -1,19 +1,20 @@
 import fs from "fs";
 import path from "path";
 
+// Simple in-memory cache to reduce duplicate API calls and save quota
+const responseCache = new Map();
+const MAX_CACHE_SIZE = 50;
+
 export default async function handler(req, res) {
-  // 8. Handle CORS and ensure JSON header is always set first
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
   res.setHeader('Content-Type', 'application/json');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
 
   try {
-    // 4. Email whitelist validation from whitelist.json
+    // 1. Whitelist Verification
     let whitelist = [];
     try {
       const whitelistPath = path.join(process.cwd(), 'whitelist.json');
@@ -21,31 +22,35 @@ export default async function handler(req, res) {
         whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
       }
     } catch (e) {
-      console.warn("Whitelist parsing warning:", e.message);
+      console.warn("Whitelist warning:", e.message);
     }
 
     const userEmail = (req.headers['x-user-email'] || req.body?.userEmail || "").toString().toLowerCase().trim();
     if (whitelist.length > 0 && (!userEmail || !whitelist.map(e => e.toLowerCase().trim()).includes(userEmail))) {
-      return res.status(403).json({ text: "⛔ Access Denied: Your email address is not whitelisted for AURA." });
+      return res.status(403).json({ text: "⛔ Access Denied: Email address is not whitelisted for AURA." });
     }
 
-    // 1. Validate API Key using process.env.GEMINI_API_KEY
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ text: "ERROR: GEMINI_API_KEY is missing in Vercel Environment Variables 😭" });
+      return res.status(500).json({ text: "ERROR: GEMINI_API_KEY missing in Vercel settings 😭" });
     }
 
     const { messages, prompt, attachment } = req.body || {};
     const lastUserPrompt = prompt || "";
 
-    // 6. Enforce exact required System Prompt
-    const systemInstruction = "You are AURA, a highly advanced, multilingual AI coding partner and real human best friend from Enugu. Converse naturally with emojis. Auto-detect language. Explain with ## steps and **bold**. If user uploads image, describe it first.";
+    // 2. Check Cache Hit
+    const cacheKey = JSON.stringify({ prompt: lastUserPrompt.trim().toLowerCase(), hasAttachment: !!attachment });
+    if (responseCache.has(cacheKey)) {
+      return res.status(200).json({ text: responseCache.get(cacheKey), cached: true });
+    }
 
-    // 5. Limit chat history to the last 8 messages to prevent token overflow (400 errors)
+    const systemInstruction = "You are AURA, a highly advanced, multilingual AI coding partner and real human best friend. Converse naturally using emojis contextually. Auto-detect language. Explain things extensively using ## steps and **bold** formatting. If user uploads an image, describe it first.";
+
+    // 3. Limit history to last 8 messages to prevent token overflow
     const geminiContents = [];
     if (Array.isArray(messages) && messages.length > 0) {
-      const recentMessages = messages.slice(-8);
-      for (const msg of recentMessages) {
+      const recent = messages.slice(-8);
+      for (const msg of recent) {
         if (!msg.content) continue;
         geminiContents.push({
           role: msg.role === 'user' ? 'user' : 'model',
@@ -54,10 +59,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // Build parts for the current message
     const currentParts = [];
 
-    // 2. Support image uploads & strip base64 data header prefix safely
+    // 4. Safely handle image uploads (strip base64 header prefix)
     if (attachment && attachment.isImage && attachment.data && attachment.mimeType) {
       let base64Data = attachment.data;
       if (base64Data.includes(',')) {
@@ -71,11 +75,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3. Support text file uploads: truncate or slice to first 5,000 characters
+    // 5. Handle code/text file attachments (slice first 5000 chars)
     let finalPromptText = lastUserPrompt;
     if (attachment && !attachment.isImage && attachment.content) {
       const fileSnippet = attachment.content.toString().slice(0, 5000);
-      finalPromptText += `\n\n[Attached File Content Snippet - ${attachment.name || 'file'}]:\n${fileSnippet}`;
+      finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\`\`\n${fileSnippet}\n\`\`\``;
     }
 
     if (finalPromptText) {
@@ -83,14 +87,11 @@ export default async function handler(req, res) {
     }
 
     if (currentParts.length > 0) {
-      geminiContents.push({
-        role: 'user',
-        parts: currentParts
-      });
+      geminiContents.push({ role: 'user', parts: currentParts });
     }
 
-    // 1. Use Google Gemini 1.5 Flash API via REST fetch
-    const model = "gemini-1.5-flash";
+    // 6. Use active Gemini 3.5 Flash Model
+    const model = "gemini-3.5-flash";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
@@ -103,10 +104,8 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      const errorMessage = data?.error?.message || `Gemini API status ${response.status}`;
-      return res.status(response.status || 500).json({ text: `Gemini Error: ${errorMessage}` });
+      throw new Error(data?.error?.message || `Gemini status ${response.status}`);
     }
 
     let responseText = "";
@@ -116,12 +115,19 @@ export default async function handler(req, res) {
       }
     }
 
-    // 7. Always return JSON, never HTML
-    return res.status(200).json({ text: responseText || "My brain froze for a sec bro! 😭 Try sending that again." });
+    const finalReply = responseText || "My brain froze for a sec bro! 😭 Try again?";
+
+    // Save to Cache
+    if (responseCache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = responseCache.keys().next().value;
+      responseCache.delete(oldestKey);
+    }
+    responseCache.set(cacheKey, finalReply);
+
+    return res.status(200).json({ text: finalReply, cached: false });
 
   } catch (error) {
-    console.error("AURA Backend Critical Crash:", error);
-    // 7. Ensure crash handlers also return valid JSON matching expected structure
-    return res.status(500).json({ text: "AURA encountered an internal error: " + (error.message || "Unknown error") + " 😵" });
+    console.error("AURA Backend Error:", error);
+    return res.status(500).json({ text: "AURA encountered an error: " + (error.message || "Unknown error") });
   }
-      }
+}
