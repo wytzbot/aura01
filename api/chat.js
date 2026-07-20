@@ -88,7 +88,7 @@ End by asking if they want to dive deeper.`;
     // 7. CALL GROQ - BIG MODEL FOR SMART + MEMORY
     const chatCompletion = await groq.chat.completions.create({
       messages: groqMessages,
-      model: "llama-3.1-70b-versatile", // Best Groq model for reasoning + memory
+      model: "llama-3.3-70b-versatile", // Best Groq model for reasoning + memory
       temperature: 0.7,
       max_tokens: 3000,
     });
