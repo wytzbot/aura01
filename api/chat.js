@@ -1,79 +1,73 @@
 import Groq from "groq-sdk";
-import fs from "fs";
-import path from "path";
+import { kv } from '@vercel/kv';
+import whitelist from "../whitelist.json";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // NEW
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // NEW
 
 export default async function handler(req, res) {
-  // Enforce JSON headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-email');
   res.setHeader('Content-Type', 'application/json');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // 1. Safe Whitelist Loading (Prevents ESM import crash)
-    let whitelist = [];
-    try {
-      const whitelistPath = path.join(process.cwd(), 'whitelist.json');
-      if (fs.existsSync(whitelistPath)) {
-        const fileData = fs.readFileSync(whitelistPath, 'utf8');
-        whitelist = JSON.parse(fileData);
-      }
-    } catch (e) {
-      console.warn("Whitelist file read warning:", e.message);
+    if (!process.env.GROQ_KEY) return res.status(500).json({ text: "GROQ_KEY missing" });
+    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ text: "GEMINI_API_KEY missing" }); // NEW
+
+    const { messages, attachment } = req.body; // NEW: attachment
+    const userEmail = req.headers['x-user-email']?.toLowerCase();
+
+    if(!whitelist.emails.includes(userEmail)){
+      return res.status(403).json({ text: "Access denied bro 😭" });
     }
 
-    // 2. Email Whitelist Verification
-    const userEmail = (req.headers['x-user-email'] || req.body?.userEmail || "").toString().toLowerCase().trim();
-    
-    if (whitelist.length > 0 && (!userEmail || !whitelist.map(e => e.toLowerCase().trim()).includes(userEmail))) {
-      return res.status(403).json({ text: "⛔ Access Denied: Your email address is not whitelisted for AURA AI." });
+    // RATE LIMIT
+    const key = `aura:${userEmail}`;
+    const count = await kv.incr(key);
+    await kv.expire(key, 3600);
+    if(count > 100) return res.status(429).json({ text: "Slow down bro" });
+
+    let finalMessages = [...messages];
+
+    // 2. IMAGE HANDLER - If user uploaded image
+    if(attachment && attachment.type.startsWith('image/')){
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const imagePart = {
+        inlineData: {
+          data: attachment.data.split(',')[1], // remove data:image/png;base64,
+          mimeType: attachment.type
+        }
+      };
+
+      const prompt = "Describe this image in detail for an AI assistant. What do you see? Text, objects, context.";
+      const result = await model.generateContent([prompt, imagePart]);
+      const imageDescription = result.response.text();
+
+      // Add the description to the chat so Groq can use it
+      finalMessages.push({
+        role: 'user',
+        content: `[User uploaded an image. Here's what it shows: ${imageDescription}] ${messages[messages.length-1].content}`
+      });
     }
 
-    // 3. Check GROQ API Key
-    if (!process.env.GROQ_KEY) {
-      return res.status(500).json({ text: "ERROR: GROQ_KEY missing in Vercel Settings > Environment Variables 😭" });
-    }
-
+    // 3. SEND TO GROQ AS NORMAL
     const groq = new Groq({ apiKey: process.env.GROQ_KEY });
-
-    const { messages } = req.body || {};
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ text: "No valid messages sent bro" });
-    }
-
     const systemMessage = {
       role: 'system', 
-      content: `You are AURA, a real human best friend from Enugu, Nigeria. 
-Talk human: use "bro", "na", "sha", emojis 😂🔥
-Explain EVERYTHING extensively with ## steps, **bold**, and examples.
-Auto-detect language and reply in same language.
-End with: "Does that make sense bro? Want me to go deeper? 😎"`
+      content: `You are AURA. If user mentions an image was uploaded, use the description provided. Talk like bro from Enugu 😂`
     };
 
-    const modelList = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"];
-    let responseText;
-    
-    for (const model of modelList) {
-      try {
-        const chatCompletion = await groq.chat.completions.create({
-          messages: [systemMessage, ...messages],
-          model: model,
-          temperature: 0.85,
-          max_tokens: 3000,
-        });
-        responseText = chatCompletion.choices[0]?.message?.content;
-        if (responseText) break;
-      } catch (e) {
-        if (!e.message.includes("rate_limit") && !e.message.includes("quota")) throw e;
-      }
-    }
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [systemMessage,...finalMessages],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.85,
+    });
 
-    return res.status(200).json({ text: responseText || "Ah bro my brain froze 😭" });
+    return res.status(200).json({ text: chatCompletion.choices[0]?.message?.content });
 
   } catch (error) {
-    console.error("AURA Backend Crash:", error);
-    return res.status(500).json({ text: "AURA crashed: " + (error.message || "Unknown error") + " 😵" });
+    return res.status(500).json({ text: "AURA error: " + error.message });
   }
-}
+  }
