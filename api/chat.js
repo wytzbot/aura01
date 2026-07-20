@@ -1,62 +1,104 @@
-import Groq from "groq-sdk";
-import { kv } from '@vercel/kv';
-import whitelist from "../whitelist.json";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+import fs from "fs";
+import path from "path";
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
   res.setHeader('Content-Type', 'application/json');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { messages, attachment } = req.body;
-    const userEmail = req.headers['x-user-email']?.toLowerCase();
-
-    if(!whitelist.emails.includes(userEmail)){
-      return res.status(403).json({ text: "Access denied bro 😭" });
+    let whitelist = [];
+    try {
+      const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+      if (fs.existsSync(whitelistPath)) {
+        whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+      }
+    } catch (e) {
+      console.warn("Whitelist warning:", e.message);
     }
 
-    // FIX TOKEN LIMIT: Keep only last 6 messages
-    let finalMessages = messages.slice(-6);
+    const userEmail = (req.headers['x-user-email'] || req.body?.userEmail || "").toString().toLowerCase().trim();
+    if (whitelist.length > 0 && (!userEmail || !whitelist.map(e => e.toLowerCase().trim()).includes(userEmail))) {
+      return res.status(403).json({ text: "⛔ Access Denied: Email not whitelisted for AURA." });
+    }
 
-    // IMAGE HANDLER
-    if(attachment && attachment.type.startsWith('image/')){
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const imagePart = {
-        inlineData: {
-          data: attachment.data.split(',')[1], // remove data:image/png;base64,
-          mimeType: attachment.type
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GROQ_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ text: "ERROR: GEMINI_API_KEY missing in Vercel settings 😭" });
+    }
+
+    const { messages, prompt, attachment } = req.body || {};
+    const lastUserPrompt = prompt || "";
+
+    const systemInstruction = `You are AURA, a multilingual AI best friend and expert coding partner. Converse naturally using human expressions and emojis contextually. Auto-detect language and reply in the same language. Wrap code in markdown blocks. Explain everything extensively with steps and examples.`;
+
+    const geminiContents = [];
+    if (Array.isArray(messages)) {
+      for (const msg of messages) {
+        if (!msg.content) continue;
+        geminiContents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
+
+    const currentParts = [];
+    if (attachment && attachment.isImage && attachment.data && attachment.mimeType) {
+      currentParts.push({
+        inline_data: {
+          mime_type: attachment.mimeType,
+          data: attachment.data
         }
-      };
-      const result = await model.generateContent([
-        "Describe this image in detail. What text, error, or code do you see?", 
-        imagePart
-      ]);
-      const imageDescription = result.response.text();
-      
-      // Replace last user message with description
-      finalMessages[finalMessages.length-1].content = 
-        `[User uploaded image. Description: ${imageDescription}] ${finalMessages[finalMessages.length-1].content}`;
+      });
     }
 
-    const groq = new Groq({ apiKey: process.env.GROQ_KEY });
-    const systemMessage = {
-      role: 'system', 
-      content: `You are AURA, best friend from Enugu. If user uploaded an image, use the description. Talk human with emojis 😂`
-    };
+    let finalPromptText = lastUserPrompt;
+    if (attachment && !attachment.isImage && attachment.content) {
+      finalPromptText += `\n\n[Attached File Context - ${attachment.name}]:\n${attachment.content}`;
+    }
 
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [systemMessage,...finalMessages],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.85,
-      max_tokens: 1500,
+    if (finalPromptText) {
+      currentParts.push({ text: finalPromptText });
+    }
+
+    geminiContents.push({
+      role: 'user',
+      parts: currentParts
     });
 
-    return res.status(200).json({ text: chatCompletion.choices[0]?.message?.content });
+    const modelCandidates = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
+    let responseText = "";
 
+    for (const model of modelCandidates) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemInstruction }] },
+            contents: geminiContents
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok && data?.candidates?.[0]?.content?.parts) {
+          for (const part of data.candidates[0].content.parts) {
+            if (part.text) responseText += part.text;
+          }
+          if (responseText) break;
+        }
+      } catch (err) {
+        console.warn(`Model attempt failed:`, err.message);
+      }
+    }
+
+    return res.status(200).json({ text: responseText || "My brain froze for a sec! 😭 Try again?" });
   } catch (error) {
-    return res.status(500).json({ text: "AURA error: " + error.message });
+    return res.status(500).json({ text: "AURA crashed: " + error.message });
   }
-                                 }
+        }
