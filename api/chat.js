@@ -33,34 +33,37 @@ export default async function handler(req, res) {
     }
 
     const { messages, prompt, attachment } = req.body || {};
-    const lastUserPrompt = prompt || (Array.isArray(messages) ? messages[messages.length - 1]?.content : "") || "";
+    const lastUserPrompt = prompt || "";
 
-    if (!lastUserPrompt && !attachment) {
-      return res.status(400).json({ text: "No message or attachment provided bro 😭" });
-    }
-
-    // Active Stable & High-Speed Gemini Models Pipeline
-    const modelCandidates = [
-      "gemini-3.5-flash",
-      "gemini-3.1-flash-lite",
-      "gemini-2.5-flash"
-    ];
-
-    const systemInstruction = `You are AURA, a real human best friend and expert coding assistant from Enugu, Nigeria. 
-Talk human: use "bro", "na", "sha", emojis 😂🔥
+    // 3. New Multilingual, Empathetic System Persona
+    const systemInstruction = `You are AURA, a highly advanced, multilingual AI coding partner and real human best friend. 
+Converse naturally using human expressions (e.g., 'oh wow', 'hmm', 'I see', 'haha') and use emojis contextually to express empathy, excitement, or support. 
+Auto-detect the user's language and reply in the same language fluently.
 Always wrap code in markdown code blocks with correct language identifiers.
 Explain EVERYTHING extensively with ## steps, **bold**, and clear examples.
-End with: "Does that make sense bro? Want me to go deeper? 😎"`;
+End your responses thoughtfully, asking if the explanation makes sense or if they want to dive deeper.`;
 
-    const parts = [];
+    // 4. Properly formatting Gemini Memory (Conversation History)
+    const geminiContents = [];
+    
+    if (Array.isArray(messages)) {
+      for (const msg of messages) {
+        if (!msg.content) continue;
+        geminiContents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
 
-    // Attach Photo (Base64)
+    // 5. Build Current User Message (Text + Attachments)
+    const currentParts = [];
+    
     if (attachment && attachment.isImage && attachment.data && attachment.mimeType) {
       if (attachment.mimeType.startsWith("video/")) {
-        return res.status(400).json({ text: "Video attachments are not supported bro. Please upload photos or text/code files only! 📸" });
+        return res.status(400).json({ text: "Video attachments aren't supported yet! Please upload photos or text/code files only! 📸" });
       }
-
-      parts.push({
+      currentParts.push({
         inline_data: {
           mime_type: attachment.mimeType,
           data: attachment.data
@@ -68,14 +71,25 @@ End with: "Does that make sense bro? Want me to go deeper? 😎"`;
       });
     }
 
-    // Attach File Context
     let finalPromptText = lastUserPrompt;
     if (attachment && !attachment.isImage && attachment.content) {
       finalPromptText += `\n\n[Attached File Context - ${attachment.name}]:\n${attachment.content}`;
     }
 
-    parts.push({ text: finalPromptText });
+    if (finalPromptText) {
+      currentParts.push({ text: finalPromptText });
+    }
 
+    if (currentParts.length === 0) {
+      return res.status(400).json({ text: "You didn't send a message or attachment! 🤔" });
+    }
+
+    geminiContents.push({
+      role: 'user',
+      parts: currentParts
+    });
+
+    const modelCandidates = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
     let responseText = "";
 
     for (const model of modelCandidates) {
@@ -87,7 +101,7 @@ End with: "Does that make sense bro? Want me to go deeper? 😎"`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ parts: parts }]
+            contents: geminiContents
           })
         });
 
@@ -98,7 +112,7 @@ End with: "Does that make sense bro? Want me to go deeper? 😎"`;
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               system_instruction: { parts: [{ text: systemInstruction }] },
-              contents: [{ parts: parts }]
+              contents: geminiContents
             })
           });
         }
@@ -118,11 +132,11 @@ End with: "Does that make sense bro? Want me to go deeper? 😎"`;
     }
 
     return res.status(200).json({
-      text: responseText || "Ah bro my brain froze 😭"
+      text: responseText || "My brain completely froze on that one, sorry! 😭 Try again?"
     });
 
   } catch (error) {
     console.error("AURA Backend Error:", error);
     return res.status(500).json({ text: "AURA crashed: " + (error.message || "Unknown error") + " 😵" });
   }
-        }
+                                 }
