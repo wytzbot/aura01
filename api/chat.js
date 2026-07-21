@@ -1,93 +1,143 @@
 import Groq from "groq-sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import fs from "fs";
+import path from "path";
 
-const groq = new Groq({ apiKey: process.env.GROQ_KEY });
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Cache persists in the "warm" instance of the Vercel function
 const responseCache = new Map();
 const MAX_CACHE_SIZE = 50;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
+  res.setHeader('Content-Type', 'application/json');
 
-  if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).json({ ok: true });
+  }
 
-  try {
-    const { messages, prompt, attachment } = req.body;
-    const userPrompt = prompt || "";
-    
-    // FIX 1: Unique Cache Key 
-    // We include a hash of the last 2 messages so the AI doesn't repeat the same answer 
-    // for different parts of the conversation.
-    const historyString = JSON.stringify(messages?.slice(-2) || "");
-    const cacheKey = Buffer.from(`${historyString}_${userPrompt}_${attachment?.name || ''}`).toString('base64').slice(0, 100);
+    const { messages, prompt, attachment } = req.body || {};
+    const lastUserPrompt = prompt || "";
 
+    // 2. Cache Check
+    const cacheKey = JSON.stringify({ prompt: lastUserPrompt.trim().toLowerCase(), hasAttachment: !!attachment });
     if (responseCache.has(cacheKey)) {
-      console.log("Serving from Cache");
       return res.status(200).json({ text: responseCache.get(cacheKey), cached: true });
     }
 
-    let visualAnalysis = "";
+    const systemPromptText = "You are AURA, a highly advanced, multilingual AI coding partner and real human best friend from Enugu. Converse naturally with emojis. Auto-detect language. Explain with ## steps and **bold**. If user uploads image, describe it first.";
 
-    // 2. Vision Pipeline
-    if (attachment && attachment.base64) {
-      try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent([
-          "Technical analysis of this image. If code is present, transcribe it. If a UI is present, describe the structure. Be extremely precise for a developer.",
-          { inlineData: { data: attachment.base64, mimeType: attachment.mimeType } }
-        ]);
-        visualAnalysis = `[CONTEXT: THE USER ATTACHED AN IMAGE. Analysis: ${result.response.text()}]`;
-      } catch (e) {
-        console.error("Vision Error:", e);
-        visualAnalysis = "[Image attached but vision engine was busy]";
+    let responseText = "";
+    const isImageTask = attachment && attachment.isImage;
+
+    // 3. Routing: Gemini 3.5 Flash for Images/Vision, Llama 3.3 for Text/Code
+    if (isImageTask) {
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      if (!geminiApiKey) {
+        return res.status(500).json({ text: "ERROR: GEMINI_API_KEY missing in Vercel settings for image processing 😭" });
       }
+
+      const geminiContents = [];
+      if (Array.isArray(messages) && messages.length > 0) {
+        const recent = messages.slice(-8);
+        for (const msg of recent) {
+          if (!msg.content) continue;
+          geminiContents.push({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.content }]
+          });
+        }
+      }
+
+      const currentParts = [];
+      let base64Data = attachment.data;
+      if (base64Data && base64Data.includes(',')) {
+        base64Data = base64Data.split(',')[1];
+      }
+
+      if (base64Data && attachment.mimeType) {
+        currentParts.push({
+          inline_data: {
+            mime_type: attachment.mimeType,
+            data: base64Data
+          }
+        });
+      }
+
+      let finalPromptText = lastUserPrompt || "Describe this image in detail.";
+      currentParts.push({ text: finalPromptText });
+      geminiContents.push({ role: 'user', parts: currentParts });
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiApiKey}`;
+      const geminiRes = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPromptText }] },
+          contents: geminiContents
+        })
+      });
+
+      const geminiData = await geminiRes.json();
+      if (!geminiRes.ok) {
+        throw new Error(geminiData?.error?.message || `Gemini API status ${geminiRes.status}`);
+      }
+
+      if (geminiData?.candidates?.[0]?.content?.parts) {
+        for (const part of geminiData.candidates[0].content.parts) {
+          if (part.text) responseText += part.text;
+        } 
+      }
+
+    } else {
+      const groqApiKey = process.env.GROQ_KEY;
+      if (!groqApiKey) {
+        return res.status(500).json({ text: "ERROR: GROQ_KEY missing in Vercel settings for text processing 😭" });
+      }
+
+      const groq = new Groq({ apiKey: groqApiKey });
+      const groqMessages = [{ role: 'system', content: systemPromptText }];
+      
+      if (Array.isArray(messages)) {
+        const recent = messages.slice(-8);
+        for (const msg of recent) {
+          if (msg.content) {
+            groqMessages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+          }
+        }
+      }
+
+      let finalPromptText = lastUserPrompt;
+      if (attachment && !attachment.isImage && attachment.content) {
+        const fileSnippet = attachment.content.toString().slice(0, 5000);
+        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\`\`\n${fileSnippet}\n\`\`\``;
+      }
+
+      if (finalPromptText) {
+        groqMessages.push({ role: 'user', content: finalPromptText });
+      }
+
+      const chatCompletion = await groq.chat.completions.create({
+        messages: groqMessages,
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.7,
+        max_tokens: 3000,
+      });
+
+      responseText = chatCompletion.choices[0]?.message?.content || "";
     }
 
-    // 3. Smart History Assembly
-    // We ensure the system instruction is the first message
-    const systemInstruction = `You are AURA, an expert Full-Stack Developer.
-RULES:
-1. RESPONSE FORMAT: Always use professional Markdown. 
-2. CODE BLOCKS: Use specific language tags. For React/Frontend, ALWAYS use \`\`\`jsx or \`\`\`tsx code blocks.
-3. MEMORY: You are in a continuous conversation. Reference previous steps if the user asks "how do I do that?" or "fix the code above".
-4. VISION: If [CONTEXT] is provided, it describes an image the user sent. Use it to debug or explain.
-5. BRAVITY: Be concise. Explain 'why' only if requested.
-6. TONE: You are friendly and users best friend.Respond in human tone and expressions to situations backed up by emojis in necessary place and time`;
+    const finalReply = responseText || "My brain froze for a sec bro! 😭 Try again?";
 
-    const recentHistory = Array.isArray(messages) ? messages : [];
-
-    // assemble the final payload for Groq
-    const groqMessages = [
-      { role: "system", content: systemInstruction },
-      ...recentHistory, // This is the memory
-      { role: "user", content: visualAnalysis ? `${visualAnalysis}\n\n${userPrompt}` : userPrompt }
-    ];
-
-    // 4. Groq Execution
-    const completion = await groq.chat.completions.create({
-      messages: groqMessages,
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.3, // Lower temperature for more consistent coding logic
-      max_tokens: 4000,
-    });
-
-    const aiResponse = completion.choices[0]?.message?.content || "I'm having trouble thinking. Please try that again.";
-
-    // 5. Update Cache
     if (responseCache.size >= MAX_CACHE_SIZE) {
-      const firstKey = responseCache.keys().next().value;
-      responseCache.delete(firstKey);
+      const oldestKey = responseCache.keys().next().value;
+      responseCache.delete(oldestKey);
     }
-    responseCache.set(cacheKey, aiResponse);
+    responseCache.set(cacheKey, finalReply);
 
-    return res.status(200).json({ text: aiResponse, cached: false });
+    return res.status(200).json({ text: finalReply, cached: false });
 
   } catch (error) {
-    console.error("Handler Error:", error);
-    return res.status(500).json({ text: "AURA_ERROR: " + error.message });
+    console.error("AURA Backend Error:", error);
+    return res.status(500).json({ text: "AURA encountered an error: " + (error.message || "Unknown error") });
   }
-                                   }
+        }
