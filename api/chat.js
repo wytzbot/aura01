@@ -146,7 +146,7 @@ SIGN OFF: End with a question to keep the convo going like "Want me to add X to 
 
       const chatCompletion = await groq.chat.completions.create({
         messages: groqMessages,
-        model: "llama-3.3-70b-versatile",
+        model: "llama-3.1-70b-versatile",
         temperature: 0.7,
         max_tokens: 3000,
       });
