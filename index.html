@@ -108,10 +108,7 @@
           </svg>
           Continue with Google
         </button>
-        <button onclick="skipLogin()">Skip Login & Test AURA</button>
-
-
-
+        
         <div class="flex items-center my-4">
           <div class="flex-1 border-t border-borderDark"></div>
           <span class="px-3 text-xs text-gray-500 uppercase">Or email</span>
@@ -380,12 +377,14 @@
       }
     };
     
+<button onclick="skipLogin()">Skip Login & Test AURA</button>
+
+<script>
 function skipLogin() {
   localStorage.setItem('skipAuth', 'true');
   window.location.href = '/chat.html'; // go straight to chat
 }
-
-
+</script>
     // Google Sign-In Popup Handler
     document.getElementById('btnGoogleAuth').onclick = async () => {
       const errorEl = document.getElementById('authError');
