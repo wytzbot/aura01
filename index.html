@@ -108,6 +108,14 @@
           </svg>
           Continue with Google
         </button>
+        <button onclick="skipLogin()">Skip Login & Test AURA</button>
+
+<script>
+function skipLogin() {
+  localStorage.setItem('skipAuth', 'true');
+  window.location.href = '/chat.html'; // go straight to chat
+}
+</script>
 
         <div class="flex items-center my-4">
           <div class="flex-1 border-t border-borderDark"></div>
