@@ -1,4 +1,6 @@
 import Groq from "groq-sdk";
+import fs from "fs";
+import path from "path";
 
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 const responseCache = new Map();
@@ -7,25 +9,23 @@ const MAX_CACHE_SIZE = 50;
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
 
   try {
-    // WHITELIST REMOVED COMPLETELY
-
     const { messages, prompt, attachment } = req.body || {};
     const lastUserPrompt = prompt || "";
 
-    // CACHE
-    const cacheKey = JSON.stringify({ prompt: lastUserPrompt.trim().toLowerCase(), hasAttachment:!!attachment });
+    // CACHE CHECK
+    const cacheKey = JSON.stringify({ prompt: lastUserPrompt.trim().toLowerCase(), hasAttachment: !!attachment });
     if (responseCache.has(cacheKey)) {
       return res.status(200).json({ text: responseCache.get(cacheKey), cached: true });
     }
 
-    const systemPromptText = `You are AURA, a highly advanced, multilingual AI coding partner and real human best friend from Enugu.
-Converse naturally with emojis. Auto-detect language and reply in same language.
+    const systemPromptText = `You are AURA, a highly advanced, multilingual AI coding partner and real human best friend. 
+Converse naturally with emojis. Auto-detect language and reply in same language. 
 Explain with ## steps and **bold**. If user uploads image, describe it first before answering.`;
 
     let responseText = "";
@@ -44,7 +44,7 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
         for (const msg of recent) {
           if (!msg.content) continue;
           geminiContents.push({
-            role: msg.role === 'user'? 'user' : 'model',
+            role: msg.role === 'user' ? 'user' : 'model',
             parts: [{ text: msg.content }]
           });
         }
@@ -58,7 +58,7 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
 
       if (base64Data && attachment.mimeType) {
         currentParts.push({
-          inlineData: { // FIXED: camelCase not snake_case for new API
+          inlineData: { 
             mimeType: attachment.mimeType,
             data: base64Data
           }
@@ -69,14 +69,13 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
       currentParts.push({ text: finalPromptText });
       geminiContents.push({ role: 'user', parts: currentParts });
 
-      // FIXED MODEL NAME
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
 
       const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPromptText }] }, // FIXED: camelCase
+          systemInstruction: { parts: [{ text: systemPromptText }] }, 
           contents: geminiContents,
           generationConfig: {
             temperature: 0.7,
@@ -90,7 +89,7 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
         throw new Error(geminiData?.error?.message || `Gemini API status ${geminiRes.status}`);
       }
 
-      responseText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't see the image properly";
+      responseText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't see the image properly bro! 📸";
 
     } else {
       // TEXT/CODE ROUTE - GROQ
@@ -105,15 +104,15 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
         const recent = messages.slice(-8);
         for (const msg of recent) {
           if (msg.content) {
-            groqMessages.push({ role: msg.role === 'user'? 'user' : 'assistant', content: msg.content });
+            groqMessages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
           }
         }
       }
 
       let finalPromptText = lastUserPrompt;
-      if (attachment &&!attachment.isImage && attachment.content) {
+      if (attachment && !attachment.isImage && attachment.content) {
         const fileSnippet = attachment.content.toString().slice(0, 5000);
-        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\n${fileSnippet}\n\`\`\``;
+        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\`\`\n${fileSnippet}\n\`\`\``;
       }
 
       if (finalPromptText) {
@@ -122,7 +121,7 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
 
       const chatCompletion = await groq.chat.completions.create({
         messages: groqMessages,
-        model: "llama-3.3-70b-versatile", // FASTEST TEXT MODEL
+        model: "llama-3.3-70b-versatile", 
         temperature: 0.7,
         max_tokens: 3000,
       });
@@ -143,4 +142,4 @@ Explain with ## steps and **bold**. If user uploads image, describe it first bef
     console.error("AURA Backend Error:", error);
     return res.status(500).json({ text: "AURA encountered an error: " + (error.message || "Unknown error") });
   }
-                                     }
+        }
