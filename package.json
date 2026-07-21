@@ -1,6 +1,17 @@
 {
+  "name": "aura-api",
+  "version": "1.0.0",
+  "description": "AURA AI Backend",
+  "main": "api/chat.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
   "dependencies": {
-    "groq-sdk": "latest",
-    "@google/generative-ai": "latest"
+    "groq-sdk": "^0.14.0"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
