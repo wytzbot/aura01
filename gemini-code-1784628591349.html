@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+  <title>AURA - Your Coding Partner</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: '#FF5500',
+            darkOrange: '#CC4400',
+            darkBg: '#080808',
+            panelBg: '#121212',
+            borderDark: '#222222',
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+        "firebase/analytics": "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"
+      }
+    }
+  </script>
+
+  <style>
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .bg-animated {
+      background: linear-gradient(-45deg, #000000, #0c0300, #1f0800, #330e00, #000000);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    .text-orange-gradient {
+      background: linear-gradient(135deg, #ffffff 0%, #FF5500 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+    .content-zone { position: relative; z-index: 2; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080808; }
+    ::-webkit-scrollbar-thumb { background: #222222; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #FF5500; }
+  </style>
+</head>
+<body class="bg-darkBg text-gray-100 font-sans antialiased h-[100dvh] overflow-hidden flex flex-col select-none">
+
+  <canvas id="particleCanvas"></canvas>
+
+  <div id="app" class="content-zone flex-1 flex flex-col h-full overflow-hidden">
+
+    <!-- WELCOME PAGE -->
+    <section id="welcomePage" class="flex-1 flex flex-col items-center justify-center p-6 text-center bg-animated h-full">
+      <div class="max-w-md w-full flex flex-col items-center space-y-8">
+        <div class="space-y-3">
+          <div class="inline-flex items-center justify-center p-3 bg-orange/10 rounded-2xl border border-orange/20 mb-2">
+            <i data-lucide="sparkles" class="w-10 h-10 text-orange"></i>
+          </div>
+          <h1 class="text-5xl font-black tracking-tight text-orange-gradient">AURA</h1>
+          <p id="rotatingText" class="text-gray-400 font-medium text-lg transition-opacity duration-500">Your Coding Partner</p>
+        </div>
+        <div class="w-full space-y-3 pt-4">
+          <button id="btnStartCoding" class="w-full py-4 px-6 bg-orange text-black font-bold rounded-xl shadow-lg hover:bg-orange/90 transition cursor-pointer flex items-center justify-center gap-2">
+            <span>Start Coding</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+          <button id="btnWelcomeLogin" class="w-full py-3 px-6 bg-panelBg border border-borderDark text-gray-300 font-medium rounded-xl hover:border-gray-700 transition cursor-pointer">
+            Already have an account? <span class="text-orange">Log in</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTH PAGE -->
+    <section id="authPage" class="hidden flex-1 flex flex-col items-center justify-center p-4 bg-darkBg h-full overflow-y-auto">
+      <div class="w-full max-w-md bg-panelBg border border-borderDark rounded-2xl p-6 sm:p-8 shadow-2xl relative my-auto">
+        <button id="btnBackToWelcome" class="absolute top-6 left-6 text-gray-400 hover:text-white cursor-pointer"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+
+        <div class="text-center mb-6 pt-2">
+          <h2 id="authTitle" class="text-2xl font-bold text-white">Create Account</h2>
+          <p id="authSubtitle" class="text-xs text-gray-400 mt-1">Join AURA to start building faster</p>
+        </div>
+
+        <button id="btnGoogleAuth" class="w-full py-3 px-4 bg-darkBg border border-borderDark hover:border-gray-700 rounded-xl text-sm font-medium text-gray-200 flex items-center justify-center gap-3 transition cursor-pointer mb-5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <div class="flex items-center my-4">
+          <div class="flex-1 border-t border-borderDark"></div>
+          <span class="px-3 text-xs text-gray-500 uppercase">Or email</span>
+          <div class="flex-1 border-t border-borderDark"></div>
+        </div>
+
+        <form id="authForm" class="space-y-4">
+          <div>
+            <label class="text-xs font-medium text-gray-400">Email Address</label>
+            <input type="email" id="inputEmail" required placeholder="name@company.com" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-400">Password</label>
+            <input type="password" id="inputPassword" required placeholder="••••••••" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
+          </div>
+          <div id="fieldConfirmPass">
+            <label class="text-xs font-medium text-gray-400">Confirm Password</label>
+            <input type="password" id="inputConfirmPassword" placeholder="••••••••" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
+          </div>
+          <div class="flex justify-end">
+            <button type="button" id="btnForgotPassword" class="text-xs text-orange hover:underline cursor-pointer">Forgot Password?</button>
+          </div>
+          <div id="authError" class="text-xs text-red-400 hidden bg-red-950/30 p-2.5 rounded-lg border border-red-800/40"></div>
+          <button type="submit" id="btnAuthSubmit" class="w-full py-3 bg-orange text-black font-bold rounded-xl hover:bg-orange/90 transition cursor-pointer text-sm">Sign Up</button>
+        </form>
+
+        <div class="text-center mt-6">
+          <button id="btnToggleAuthMode" class="text-xs text-gray-400 hover:text-white cursor-pointer">
+            Already have an account? <span class="text-orange font-medium">Log In</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT PAGE -->
+    <section id="chatPage" class="hidden flex-1 flex h-full overflow-hidden bg-darkBg relative">
+      <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 opacity-0 pointer-events-none transition-opacity md:hidden"></div>
+
+      <!-- Collapsible Sidebar -->
+      <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-panelBg border-r border-borderDark z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col h-full">
+        <div class="p-4 border-b border-borderDark flex items-center justify-between">
+          <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-orange"></i><span class="font-bold text-white">AURA AI</span></div>
+          <div class="flex items-center gap-1">
+            <button id="btnNewChat" class="p-2 text-orange border border-orange/20 rounded-lg text-xs font-semibold hover:bg-darkBg cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> New</button>
+            <button id="btnCloseSidebar" class="p-2 text-gray-400 hover:text-white md:hidden cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+        <div id="chatHistoryList" class="flex-1 overflow-y-auto px-3 space-y-1 py-2"></div>
+        <div class="p-4 border-t border-borderDark flex items-center justify-between bg-darkBg/50">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <div id="userAvatar" class="w-8 h-8 rounded-full bg-orange/20 border border-orange/40 text-orange flex items-center justify-center font-bold text-xs uppercase">U</div>
+            <span id="userEmailDisplay" class="text-xs text-gray-300 truncate">user@aura.ai</span>
+          </div>
+          <button id="btnLogout" class="p-2 text-gray-400 hover:text-red-400 rounded-lg cursor-pointer" title="Log Out"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+        </div>
+      </aside>
+
+      <!-- Main Chat Area -->
+      <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-darkBg">
+        <header class="h-14 border-b border-borderDark flex items-center justify-between px-4 bg-panelBg/80 shrink-0 z-10">
+          <button id="btnToggleSidebar" class="p-2 text-gray-300 hover:text-white rounded-lg cursor-pointer"><i data-lucide="menu" class="w-5 h-5"></i></button>
+          <span class="text-xs font-semibold text-gray-300 bg-darkBg px-3.5 py-1.5 rounded-full border border-orange/30 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange animate-pulse"></span>AURA AI</span>
+          <button id="btnHeaderNewChat" class="p-2 text-gray-300 hover:text-white rounded-lg cursor-pointer"><i data-lucide="square-pen" class="w-5 h-5"></i></button>
+        </header>
+
+        <div id="emptyGreeting" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div class="p-4 bg-orange/5 rounded-full border border-orange/10 mb-4"><i data-lucide="code-2" class="w-8 h-8 text-orange"></i></div>
+          <h2 id="rotatingGreet" class="text-2xl font-bold text-white mb-2 transition-opacity duration-500">Welcome back</h2>
+          <p class="text-gray-400 text-sm max-w-sm">Ask a question, upload photos, or attach code files to begin.</p>
+        </div>
+
+        <div id="messagesContainer" class="hidden flex-1 overflow-y-auto p-4 space-y-6"></div>
+
+        <!-- Input Bar -->
+        <div class="shrink-0 p-3 bg-black border-t border-orange/40 z-20 w-full">
+          <div class="max-w-3xl mx-auto">
+            
+            <!-- Thumbnail Preview Bar -->
+            <div id="attachmentPreview" class="hidden mb-2 p-2 bg-panelBg border border-orange rounded-xl flex items-center justify-between gap-2 text-xs text-gray-300">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <img id="imgPreviewThumb" class="w-12 h-12 object-cover rounded-lg border border-orange hidden" alt="Preview">
+                <i id="previewFileIcon" data-lucide="file-text" class="w-5 h-5 text-orange hidden shrink-0"></i>
+                <span id="attachmentName" class="truncate font-medium text-white">filename.txt</span>
+              </div>
+              <button id="btnRemoveAttachment" class="text-gray-400 hover:text-red-400 p-1 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <!-- Solid Black Input Container Box -->
+            <div style="background-color: #000000 !important; border: 1.5px solid #FF5500 !important;" class="rounded-2xl p-2 shadow-xl">
+              <textarea id="chatInput" rows="1" placeholder="Ask AURA anything..." style="background-color: #000000 !important; color: #ffffff !important;" class="w-full px-3 py-2 text-sm focus:outline-none resize-none max-h-32 min-h-[40px]"></textarea>
+              
+              <div class="flex items-center justify-between pt-2 px-1 border-t border-gray-800">
+                <div class="flex items-center gap-1">
+                  <input type="file" id="fileAttach" accept="image/*,text/*,.js,.jsx,.py,.html,.css,.json,.ts,.tsx" class="hidden">
+                  <button id="btnAttach" class="p-2 text-gray-400 hover:text-orange hover:bg-panelBg rounded-lg transition cursor-pointer" title="Attach file or image"><i data-lucide="paperclip" class="w-4 h-4"></i></button>
+                </div>
+
+                <button id="btnSend" class="p-2.5 bg-orange text-black font-bold rounded-xl hover:bg-orange/90 transition cursor-pointer"><i data-lucide="send" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+
+      </main>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp, getApps } from "firebase/app";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged, 
+      sendPasswordResetEmail,
+      GoogleAuthProvider,
+      signInWithPopup,
+      setPersistence, 
+      browserLocalPersistence 
+    } from "firebase/auth";
+    import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+    import { getAnalytics, isSupported } from "firebase/analytics";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
+      authDomain: "my-wyticle-id.firebaseapp.com",
+      projectId: "my-wyticle-id",
+      storageBucket: "my-wyticle-id.firebasestorage.app",
+      messagingSenderId: "634169882815",
+      appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
+      measurementId: "G-7X84RSMH58"
+    };
+
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+    const auth = getAuth(app);
+    setPersistence(auth, browserLocalPersistence).catch(err => console.warn("Persistence notice:", err));
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    let analytics = null;
+    isSupported().then((supported) => {
+      if (supported) analytics = getAnalytics(app);
+    });
+
+    let currentUser = null, authIsSignUp = true, chats = [], currentChatId = null, attachmentData = null;
+
+    const welcomePage = document.getElementById('welcomePage');
+    const authPage = document.getElementById('authPage');
+    const chatPage = document.getElementById('chatPage');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const chatInput = document.getElementById('chatInput');
+    const btnSend = document.getElementById('btnSend');
+    const messagesContainer = document.getElementById('messagesContainer');
+    const emptyGreeting = document.getElementById('emptyGreeting');
+    const chatHistoryList = document.getElementById('chatHistoryList');
+
+    lucide.createIcons();
+
+    // Canvas Particles
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 1; this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5; this.alpha = Math.random() * 0.5 + 0.2;
+      }
+      update() {
+        this.x += this.speedX; this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+      }
+      draw() {
+        ctx.fillStyle = `rgba(255, 85, 0, ${this.alpha})`;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    for (let i = 0; i < 40; i++) particles.push(new Particle());
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Rotating Welcome Texts
+    const welcomeTexts = ["Your Coding Partner", "Generate, Debug, Deploy", "Powered by AURA Engine"];
+    let welcomeTextIdx = 0;
+    const rotatingTextEl = document.getElementById('rotatingText');
+    setInterval(() => {
+      if (!rotatingTextEl) return;
+      rotatingTextEl.style.opacity = '0';
+      setTimeout(() => {
+        welcomeTextIdx = (welcomeTextIdx + 1) % welcomeTexts.length;
+        rotatingTextEl.textContent = welcomeTexts[welcomeTextIdx];
+        rotatingTextEl.style.opacity = '1';
+      }, 500);
+    }, 3000);
+
+    const greetTexts = ["Welcome back, legend! Let's build something epic today 🚀", "What are we coding right now? I'm ready when you are! 😎", "Drop your ideas or bugs here, let's crush it together! 🔥"];
+    let greetTextIdx = 0;
+    const rotatingGreetEl = document.getElementById('rotatingGreet');
+    setInterval(() => {
+      if (!rotatingGreetEl) return;
+      rotatingGreetEl.style.opacity = '0';
+      setTimeout(() => {
+        greetTextIdx = (greetTextIdx + 1) % greetTexts.length;
+        rotatingGreetEl.textContent = greetTexts[greetTextIdx];
+        rotatingGreetEl.style.opacity = '1';
+      }, 500);
+    }, 3500);
+
+    function showPage(page) {
+      welcomePage.classList.add('hidden'); authPage.classList.add('hidden'); chatPage.classList.add('hidden');
+      page.classList.remove('hidden');
+    }
+
+    document.getElementById('btnStartCoding').onclick = () => { setAuthMode(true); showPage(authPage); };
+    document.getElementById('btnWelcomeLogin').onclick = () => { setAuthMode(false); showPage(authPage); };
+    document.getElementById('btnBackToWelcome').onclick = () => showPage(welcomePage);
+
+    function setAuthMode(isSignUp) {
+      authIsSignUp = isSignUp;
+      document.getElementById('authTitle').textContent = isSignUp ? "Create Account" : "Welcome Back";
+      document.getElementById('authSubtitle').textContent = isSignUp ? "Join AURA to start building faster" : "Log in to access your coding history";
+      document.getElementById('fieldConfirmPass').style.display = isSignUp ? 'block' : 'none';
+      document.getElementById('btnAuthSubmit').textContent = isSignUp ? "Sign Up" : "Log In";
+      document.getElementById('btnToggleAuthMode').innerHTML = isSignUp 
+        ? 'Already have an account? <span class="text-orange font-medium">Log In</span>'
+        : 'Need an account? <span class="text-orange font-medium">Sign Up</span>';
+      document.getElementById('authError').classList.add('hidden');
+    }
+    document.getElementById('btnToggleAuthMode').onclick = () => setAuthMode(!authIsSignUp);
+
+    // Email & Password Auth Handler
+    document.getElementById('authForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('inputEmail').value.trim();
+      const password = document.getElementById('inputPassword').value;
+      const errorEl = document.getElementById('authError');
+      errorEl.classList.add('hidden');
+
+      try {
+        if (authIsSignUp) {
+          const confirmPass = document.getElementById('inputConfirmPassword').value;
+          if (password !== confirmPass) throw new Error("Passwords do not match");
+          await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+        }
+      } catch (err) {
+        errorEl.textContent = err.message || "Authentication failed.";
+        errorEl.classList.remove('hidden');
+      }
+    };
+
+    // Google Sign-In Popup Handler
+    document.getElementById('btnGoogleAuth').onclick = async () => {
+      const errorEl = document.getElementById('authError');
+      errorEl.classList.add('hidden');
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        errorEl.textContent = err.message || "Google sign-in failed.";
+        errorEl.classList.remove('hidden');
+      }
+    };
+
+    // Forgot Password Handler
+    document.getElementById('btnForgotPassword').onclick = async () => {
+      const email = prompt("Enter your account email address to reset password:");
+      if (email) {
+        try {
+          await sendPasswordResetEmail(auth, email.trim());
+          alert("Password reset email sent! Check your inbox.");
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+    };
+
+    document.getElementById('btnLogout').onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        document.getElementById('userEmailDisplay').textContent = user.email || 'User';
+        document.getElementById('userAvatar').textContent = (user.email || 'U').charAt(0).toUpperCase();
+        showPage(chatPage); loadChats();
+      } else {
+        if (!welcomePage.classList.contains('hidden') || !chatPage.classList.contains('hidden')) showPage(welcomePage);
+      }
+    });
+
+    // Sidebar Toggles
+    function openSidebar() { sidebar.classList.remove('-translate-x-full'); sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none'); }
+    function closeSidebar() { sidebar.classList.add('-translate-x-full'); sidebarOverlay.classList.add('opacity-0', 'pointer-events-none'); }
+    document.getElementById('btnToggleSidebar').onclick = () => sidebar.classList.contains('-translate-x-full') ? openSidebar() : closeSidebar();
+    document.getElementById('btnCloseSidebar').onclick = closeSidebar;
+    sidebarOverlay.onclick = closeSidebar;
+
+    document.getElementById('btnNewChat').onclick = createNewChat;
+    document.getElementById('btnHeaderNewChat').onclick = createNewChat;
+
+    function createNewChat() {
+      currentChatId = Date.now().toString();
+      chats.unshift({ id: currentChatId, title: "New Conversation", updatedAt: Date.now(), messages: [] });
+      saveChats(); renderChatHistory(); selectChat(currentChatId);
+      if (window.innerWidth < 768) closeSidebar();
+    }
+
+    function saveChats() {
+      if (!currentUser) return;
+      localStorage.setItem(`aura_chats_${currentUser.uid}`, JSON.stringify(chats));
+      setDoc(doc(db, "users", currentUser.uid), { chats: chats }, { merge: true }).catch(err => console.error(err));
+    }
+
+    async function loadChats() {
+      if (!currentUser) return;
+      const local = localStorage.getItem(`aura_chats_${currentUser.uid}`);
+      if (local) { try { chats = JSON.parse(local); renderChatHistory(); } catch (e) { chats = []; } }
+      onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+        if (docSnap.exists() && docSnap.data().chats) {
+          chats = docSnap.data().chats;
+          localStorage.setItem(`aura_chats_${currentUser.uid}`, JSON.stringify(chats));
+          renderChatHistory(); if (currentChatId) renderMessages();
+        }
+      });
+    }
+
+    function renderChatHistory() {
+      chatHistoryList.innerHTML = "";
+      chats.forEach(chat => {
+        const item = document.createElement('div');
+        const isActive = chat.id === currentChatId;
+        item.className = `p-2.5 rounded-xl text-xs cursor-pointer flex items-center justify-between transition ${isActive ? 'bg-orange/10 text-orange border border-orange/20' : 'text-gray-300 hover:bg-darkBg'}`;
+        item.innerHTML = `<span class="truncate">${chat.title}</span>`;
+        item.onclick = () => { selectChat(chat.id); if (window.innerWidth < 768) closeSidebar(); };
+        chatHistoryList.appendChild(item);
+      });
+    }
+
+    function selectChat(id) { currentChatId = id; renderChatHistory(); renderMessages(); }
+
+    function renderMessages() {
+      const activeChat = chats.find(c => c.id === currentChatId);
+      if (!activeChat || activeChat.messages.length === 0) {
+        emptyGreeting.classList.remove('hidden'); messagesContainer.classList.add('hidden'); messagesContainer.innerHTML = ''; return;
+      }
+      emptyGreeting.classList.add('hidden'); messagesContainer.classList.remove('hidden');
+      messagesContainer.innerHTML = '';
+      activeChat.messages.forEach((msg, idx) => messagesContainer.appendChild(createMessageElement(msg, idx)));
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function createMessageElement(msg, index) {
+      const isUser = msg.role === 'user';
+      const wrapper = document.createElement('div');
+      wrapper.className = `group flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1 relative mb-4`;
+
+      const contentDiv = document.createElement('div');
+      if (isUser) {
+        contentDiv.className = `max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tr-none p-4 text-sm leading-relaxed shadow-lg`;
+        contentDiv.style.backgroundColor = '#000000';
+        contentDiv.style.color = '#ffffff';
+        contentDiv.style.border = '1px solid #FF5500';
+      } else {
+        contentDiv.className = `max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tl-none p-4 text-sm leading-relaxed bg-panelBg border border-borderDark text-gray-100 shadow-lg`;
+      }
+
+      if (isUser) {
+        if (msg.attachment && msg.attachment.isImage && msg.attachment.data) {
+          const img = document.createElement('img');
+          img.src = msg.attachment.data;
+          img.className = "max-w-full max-h-56 rounded-xl mb-2 object-cover border border-orange/40 shadow";
+          contentDiv.appendChild(img);
+        }
+        if (msg.attachment && !msg.attachment.isImage && msg.attachment.name) {
+          const fileCard = document.createElement('div');
+          fileCard.className = "mb-2 p-2 bg-black/60 border border-orange/40 rounded-xl flex items-center gap-2 text-xs font-mono text-orange";
+          fileCard.innerHTML = `<i data-lucide="file-code" class="w-4 h-4 shrink-0"></i><span class="truncate">${msg.attachment.name}</span>`;
+          contentDiv.appendChild(fileCard);
+        }
+        if (msg.text) {
+          const p = document.createElement('p'); p.textContent = msg.text; contentDiv.appendChild(p);
+        }
+      } else {
+        contentDiv.innerHTML = marked.parse(msg.text);
+      }
+      wrapper.appendChild(contentDiv);
+      lucide.createIcons();
+      return wrapper;
+    }
+
+    // Attachment Pipeline
+    document.getElementById('btnAttach').onclick = () => document.getElementById('fileAttach').click();
+    document.getElementById('fileAttach').onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const isImage = file.type.startsWith('image/');
+      const reader = new FileReader();
+
+      if (isImage) {
+        reader.onload = (event) => {
+          const dataUrl = event.target.result;
+          attachmentData = { name: file.name, mimeType: file.type, data: dataUrl, isImage: true };
+          const thumb = document.getElementById('imgPreviewThumb');
+          thumb.src = dataUrl; thumb.classList.remove('hidden');
+          document.getElementById('previewFileIcon').classList.add('hidden');
+          document.getElementById('attachmentName').textContent = file.name;
+          document.getElementById('attachmentPreview').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload = (event) => {
+          attachmentData = { name: file.name, content: event.target.result, isImage: false };
+          document.getElementById('imgPreviewThumb').classList.add('hidden');
+          document.getElementById('previewFileIcon').classList.remove('hidden');
+          document.getElementById('attachmentName').textContent = file.name;
+          document.getElementById('attachmentPreview').classList.remove('hidden');
+          lucide.createIcons();
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    document.getElementById('btnRemoveAttachment').onclick = () => {
+      attachmentData = null; document.getElementById('fileAttach').value = "";
+      document.getElementById('attachmentPreview').classList.add('hidden');
+    };
+
+    btnSend.onclick = handleSendMessage;
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+    });
+
+    function handleSendMessage() {
+      let promptText = chatInput.value.trim();
+      if (!promptText && !attachmentData) return;
+      const currentAttachment = attachmentData;
+
+      attachmentData = null;
+      document.getElementById('fileAttach').value = "";
+      document.getElementById('attachmentPreview').classList.add('hidden');
+      chatInput.value = "";
+
+      if (!currentChatId) {
+        currentChatId = Date.now().toString();
+        chats.unshift({ id: currentChatId, title: (promptText || "Media Attachment").slice(0, 30) + "...", messages: [] });
+      }
+
+      const activeChat = chats.find(c => c.id === currentChatId);
+      activeChat.messages.push({ role: 'user', text: promptText, attachment: currentAttachment });
+      saveChats(); renderChatHistory(); renderMessages(); sendPromptToAI();
+    }
+
+    async function sendPromptToAI() {
+      const activeChat = chats.find(c => c.id === currentChatId);
+      if (!activeChat) return;
+      const lastUserMsg = activeChat.messages[activeChat.messages.length - 1];
+
+      const aiMessageObj = { role: 'assistant', text: "Analyzing your request right now... give me a quick second! 💬✨" };
+      activeChat.messages.push(aiMessageObj);
+      renderMessages();
+      btnSend.disabled = true;
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-Email': currentUser?.email || '' },
+          body: JSON.stringify({
+            messages: activeChat.messages.slice(0, -1).map(m => ({ role: m.role, content: m.text })),
+            prompt: lastUserMsg?.text || "",
+            attachment: lastUserMsg?.attachment || null
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.text || "Server error");
+        aiMessageObj.text = data.text || "Hmm, I didn't get a response back. Let's try that again! 🤝";
+      } catch (err) {
+        aiMessageObj.text = `Oops, something went wrong there: ${err.message} 😅 Let's try again!`;
+      } finally {
+        btnSend.disabled = false; saveChats(); renderMessages();
+      }
+    }
+  </script>
+</body>
+</html>
