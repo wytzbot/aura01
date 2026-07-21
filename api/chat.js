@@ -137,21 +137,43 @@ SIGN OFF: End with a question to keep the convo going like "Want me to add X to 
       let finalPromptText = lastUserPrompt;
       if (attachment &&!attachment.isImage && attachment.content) {
         const fileSnippet = attachment.content.toString().slice(0, 5000);
-        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\`\`\n${fileSnippet}\n\`\`\``;
+        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\n${fileSnippet}\n\`\`\``;
       }
 
       if (finalPromptText) {
         groqMessages.push({ role: 'user', content: finalPromptText });
       }
 
-      const chatCompletion = await groq.chat.completions.create({
-        messages: groqMessages,
-        model: "llama-3.1-70b-versatile",
-        temperature: 0.7,
-        max_tokens: 3000,
-      });
+      // ===== AUTO FALLBACK LOGIC =====
+      const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+      let lastError = null;
 
-      responseText = chatCompletion.choices[0]?.message?.content || "";
+      for (const model of models) {
+        try {
+          const chatCompletion = await groq.chat.completions.create({
+            messages: groqMessages,
+            model: model,
+            temperature: 0.7,
+            max_tokens: 3000,
+          });
+          responseText = chatCompletion.choices[0]?.message?.content || "";
+          if (model === "llama-3.1-8b-instant") {
+            responseText = "⚡ *Running on fast mode*\n\n" + responseText;
+          }
+          break; // success, exit loop
+        } catch (err) {
+          lastError = err;
+          console.log(`Model ${model} failed:`, err.message);
+          // if it's not rate limit, don't try next model
+          if (!err.message.includes('429') &&!err.message.includes('Rate limit')) {
+            throw err;
+          }
+        }
+      }
+
+      if (!responseText && lastError) {
+        throw lastError;
+      }
     }
 
     const finalReply = responseText || "My brain froze for a sec bro! 😭 Try again?";
@@ -167,4 +189,4 @@ SIGN OFF: End with a question to keep the convo going like "Want me to add X to 
     console.error("AURA Backend Error:", error);
     return res.status(500).json({ text: "AURA encountered a server error: " + (error.message || "Unknown error") });
   }
-                    }
+        }
