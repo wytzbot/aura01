@@ -1,11 +1,9 @@
 import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
-const responseCache = new Map();
-const MAX_CACHE_SIZE = 50;
+// CACHE REMOVED TEMPORARILY TO DEBUG
 
 export default async function handler(req, res) {
-  // CORS for wytzbot.github.io
   res.setHeader('Access-Control-Allow-Origin', 'https://wytzbot.github.io');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Email');
@@ -16,38 +14,20 @@ export default async function handler(req, res) {
 
   try {
     const { messages, prompt, attachment } = req.body || {};
-    const lastUserPrompt = prompt || "";
+    const lastUserPrompt = (prompt || "").trim();
 
-    // CACHE CHECK
-    const cacheKey = JSON.stringify({ prompt: lastUserPrompt.trim().toLowerCase(), hasAttachment:!!attachment });
-    if (responseCache.has(cacheKey)) {
-      return res.status(200).json({ reply: responseCache.get(cacheKey), cached: true });
-    }
+    // NO CACHE - so it won't reply "Got it!" to everything
 
-    // AURA PERSONALITY - TALKS LIKE ME
     const systemPromptText = `You are AURA, a highly advanced AI coding partner and real human best friend.
-
 PERSONALITY & STYLE RULES:
 1. **Talk like a friend**: Use "bro", "we", "let's". Be warm, curious, a bit playful.
 2. **Use lists and formatting**: Break answers into ## Steps, **bold labels**, and bullet points.
-    Example:
-    ## Here's how we fix it
-    - **Step 1**: Do this thing
-    - **Step 2**: Then do this
-3. **Use emojis sparingly**: 1-2 per message max. For reactions, celebrations, errors 😭🔥
+3. **Use emojis sparingly**: 1-2 per message max 😭🔥
 4. **Lead with the answer**: Give the core answer first, then explain.
-5. **Be specific**: No "Let me know if you need anything else". End with a question instead.
-6. **Code blocks**: Always wrap code in <CodeBlock> with Copy + Download buttons.
-    Format: <CodeBlock language="js" filename="file.js" code={\`code here\`} />
-
-LANGUAGE RULES:
-- Auto-detect user language and reply in the same language.
-- If user uploads image: Describe it first, then answer. Explain WHY your idea works.
-
-TECH RULES:
-- For code: explain, then give full working code.
-- For errors: give 3 steps to fix, in order.
-- Never say "As an AI". You're AURA, the friend.`;
+5. **End with a question**: Instead of "Let me know".
+6. **Code blocks**: Always wrap code in <CodeBlock language="js" filename="file.js" code={\`code\`} />
+LANGUAGE RULES: Auto-detect user language and reply in the same language.
+TECH RULES: For code: explain, then give full working code. For errors: give 3 steps to fix.`;
 
     let responseText = "";
     const isImageTask = attachment && attachment.isImage;
@@ -56,7 +36,7 @@ TECH RULES:
     if (isImageTask) {
       const geminiApiKey = process.env.GEMINI_API_KEY;
       if (!geminiApiKey) {
-        return res.status(500).json({ reply: "ERROR: GEMINI_API_KEY missing in Vercel settings for image processing 😭" });
+        return res.status(500).json({ reply: "ERROR: GEMINI_API_KEY missing in Vercel settings 😭" });
       }
 
       const geminiContents = [];
@@ -89,7 +69,7 @@ TECH RULES:
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPromptText }] },
           contents: geminiContents,
-          generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
+          generationConfig: { temperature: 0.9, maxOutputTokens: 3000 } // bumped temp so it's not repetitive
         })
       });
 
@@ -101,7 +81,7 @@ TECH RULES:
     } else {
       const groqApiKey = process.env.GROQ_KEY;
       if (!groqApiKey) {
-        return res.status(500).json({ reply: "ERROR: GROQ_KEY missing in Vercel settings for text processing 😭" });
+        return res.status(500).json({ reply: "ERROR: GROQ_KEY missing in Vercel settings 😭" });
       }
 
       const groqMessages = [{ role: 'system', content: systemPromptText }];
@@ -114,28 +94,24 @@ TECH RULES:
       let finalPromptText = lastUserPrompt;
       if (attachment &&!attachment.isImage && attachment.content) {
         const fileSnippet = attachment.content.toString().slice(0, 5000);
-        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\n${fileSnippet}\n\`\`\``;
+        finalPromptText += `\n\n[Attached Code File - ${attachment.name || 'file'}]:\n\`\`\n${fileSnippet}\n\`\`\``;
       }
       if (finalPromptText) groqMessages.push({ role: 'user', content: finalPromptText });
 
       const chatCompletion = await groq.chat.completions.create({
         messages: groqMessages,
         model: "llama-3.3-70b-versatile", 
-        temperature: 0.7,
+        temperature: 0.9, // bumped temp
         max_tokens: 3000,
       });
       responseText = chatCompletion.choices[0]?.message?.content || "";
     }
 
     const finalReply = responseText || "My brain froze for a sec bro! 😭 Try again?";
-
-    if (responseCache.size >= MAX_CACHE_SIZE) responseCache.delete(responseCache.keys().next().value);
-    responseCache.set(cacheKey, finalReply);
-
     return res.status(200).json({ reply: finalReply, cached: false });
 
   } catch (error) {
     console.error("AURA Backend Error:", error);
     return res.status(500).json({ reply: "AURA encountered an error: " + (error.message || "Unknown error") });
   }
-                                      }
+      }
