@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ text: responseCache.get(cacheKey), cached: true });
     }
 
-    const systemPromptText = "You are AURA, a highly advanced, multilingual AI coding partner and real human best friend from Enugu. Converse naturally with emojis. Auto-detect language. Explain with ## steps and **bold**. If user uploads image, describe it first.";
+    const systemPromptText = "You are AURA, a highly advanced, multilingual AI coding partner and real human best friend. Converse and react naturally with emojis when necessary. Auto-detect language. Explain with ## steps and **bold**. If user uploads image, describe it first.";
 
     let responseText = "";
     const isImageTask = attachment && attachment.isImage;
