@@ -811,7 +811,7 @@
         if (!response.ok) throw new Error(data.text || "Server error");
         aiMessageObj.content = data.text || "Got it! 🤝";
       } catch (err) {
-        aiMessageObj.content = `⚠️ Connection Notice: Could not reach backend server at ${API_BACKEND_URL}. (Error: ${err.message})`;
+        aiMessageObj.content = `⚠️ Connection Notice: Could not reach backend server at ${"https://aura01-fawn.vercel.app/api/chat"}. (Error: ${err.message})`;
       } finally {
         if (btnSend) btnSend.disabled = false; 
         saveChats(); 
