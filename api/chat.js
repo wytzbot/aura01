@@ -144,36 +144,15 @@ SIGN OFF: End with a question to keep the convo going like "Want me to add X to 
         groqMessages.push({ role: 'user', content: finalPromptText });
       }
 
-      // ===== AUTO FALLBACK LOGIC =====
-      const models = ["llama-3.1-8b-instant"];
-      let lastError = null;
+      // LOCKED TO 8B - NO MORE RATE LIMITS
+      const chatCompletion = await groq.chat.completions.create({
+        messages: groqMessages,
+        model: "llama-3.1-8b-instant", // <-- CHANGED
+        temperature: 0.7,
+        max_tokens: 3000,
+      });
 
-      for (const model of models) {
-        try {
-          const chatCompletion = await groq.chat.completions.create({
-            messages: groqMessages,
-            model: model,
-            temperature: 0.7,
-            max_tokens: 3000,
-          });
-          responseText = chatCompletion.choices[0]?.message?.content || "";
-          if (model === "llama-3.1-8b-instant") {
-            responseText = "⚡ *Running on fast mode*\n\n" + responseText;
-          }
-          break; // success, exit loop
-        } catch (err) {
-          lastError = err;
-          console.log(`Model ${model} failed:`, err.message);
-          // if it's not rate limit, don't try next model
-          if (!err.message.includes('429') &&!err.message.includes('Rate limit')) {
-            throw err;
-          }
-        }
-      }
-
-      if (!responseText && lastError) {
-        throw lastError;
-      }
+      responseText = chatCompletion.choices[0]?.message?.content || "";
     }
 
     const finalReply = responseText || "My brain froze for a sec bro! 😭 Try again?";
