@@ -238,13 +238,13 @@
       apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
       authDomain: "my-wyticle-id.firebaseapp.com",
       projectId: "my-wyticle-id",
-      storageBucket: "my-wyticle-id.firebasestorage.app",
+      storageBucket: "my-wyticle-id.appspot.com", // FIXED: was.firebasestorage.app
       messagingSenderId: "634169882815",
       appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
       measurementId: "G-7X84RSMH58"
     };
 
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+    const app =!getApps().length? initializeApp(firebaseConfig) : getApps()[0];
     const auth = getAuth(app);
     setPersistence(auth, browserLocalPersistence).catch(err => console.warn("Persistence notice:", err));
     const db = getFirestore(app);
@@ -254,6 +254,10 @@
     isSupported().then((supported) => {
       if (supported) analytics = getAnalytics(app);
     });
+
+    // Export these so other files can use them
+    export { auth, db, googleProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, sendPasswordResetEmail };
+  
 
     let currentUser = null, authIsSignUp = true, chats = [], currentChatId = null, attachmentData = null;
 
