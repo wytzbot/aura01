@@ -796,8 +796,8 @@
       renderMessages();
       if (btnSend) btnSend.disabled = true;
 
-      try {
-        const API_BACKEND_URL = "https://aura01-fawn.vercel.app";
+      
+        const API_BACKEND_URL = "https://aura01-fawn.vercel.app/api/chat";
         const response = await fetch(API_BACKEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
