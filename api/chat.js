@@ -69,7 +69,7 @@ Explain with numbered ## steps and **bold**. If user uploads image, describe it 
       currentParts.push({ text: finalPromptText });
       geminiContents.push({ role: 'user', parts: currentParts });
 
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest,gemini-1.5-latest,gemini-3.5-flash:generateContent?key=${geminiApiKey}`;
 
       const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
