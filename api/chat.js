@@ -145,7 +145,7 @@ SIGN OFF: End with a question to keep the convo going like "Want me to add X to 
       }
 
       // ===== AUTO FALLBACK LOGIC =====
-      const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+      const models = ["llama-3.1-8b-instant"];
       let lastError = null;
 
       for (const model of models) {
