@@ -98,13 +98,33 @@ async function saveUser(){if(!user)return;await setDoc(doc(db,"users",user.uid),
 async function loadPlan(){const s=await getDoc(doc(db,"users",user.uid));plan=s.exists()?s.data().plan||"free":"free"}
 async function loadChats(){const q=query(collection(db,"users",user.uid,"chats"),orderBy("updatedAt","desc"),limit(30));const snap=await getDocs(q);chats=snap.docs.map(d=>({id:d.id,...d.data(),messages:[]}));if(!chats.length)await newChat(false);else await openChat(chats[0].id)}
 async function loadMessages(id){const q=query(collection(db,"users",user.uid,"chats",id,"messages"),orderBy("createdAt","asc"),limit(100));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}))}
-async function newChat(close=true){const r=await addDoc(collection(db,"users",user.uid,"chats"),{title:"New conversation",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});const c={id:r.id,title:"New conversation",messages:[]};chats.unshift(c);currentChat=c;render();if(close)closeMenu()}
-async function openChat(id){const c=chats.find(x=>x.id===id);if(!c)return;c.messages=await loadMessages(id);currentChat=c;render();closeMenu()}
+async function newChat(close=true){
+ try{
+  const r=await addDoc(collection(db,"users",user.uid,"chats"),{title:"New conversation",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  const c={id:r.id,title:"New conversation",messages:[]};chats.unshift(c);currentChat=c;render();if(close)closeMenu()
+ }catch(e){notify("AURA couldn't start a new chat. Check your connection and try again.")}
+}
+async function openChat(id){
+ const c=chats.find(x=>x.id===id);if(!c)return;
+ try{
+  c.messages=await loadMessages(id);currentChat=c;render();closeMenu()
+ }catch(e){notify("AURA couldn't load that chat. Check your connection and try again.")}
+}
 async function saveMessage(m){const r=await addDoc(collection(db,"users",user.uid,"chats",currentChat.id,"messages"),{role:m.role,content:m.content,attachment:m.attachment||null,createdAt:serverTimestamp()});m.id=r.id;await setDoc(doc(db,"users",user.uid,"chats",currentChat.id),{updatedAt:serverTimestamp(),title:currentChat.title},{merge:true})}
-async function removeChat(id){await deleteDoc(doc(db,"users",user.uid,"chats",id));chats=chats.filter(c=>c.id!==id);if(!chats.length)return newChat(false);await openChat(chats[0].id)}
+async function removeChat(id){
+ try{
+  await deleteDoc(doc(db,"users",user.uid,"chats",id));chats=chats.filter(c=>c.id!==id);
+  if(!chats.length)return newChat(false);
+  await openChat(chats[0].id)
+ }catch(e){notify("AURA couldn't delete that chat. Check your connection and try again.")}
+}
 function closeMenu(){document.getElementById("drawer")?.classList.add("-translate-x-full");document.getElementById("shade")?.classList.add("hidden")}
 
 function render(){
+ const prevInput=document.getElementById("input");
+ const keepValue=prevInput?prevInput.value:"";
+ const hadFocus=!!prevInput&&prevInput===document.activeElement;
+ const selStart=prevInput?prevInput.selectionStart:null,selEnd=prevInput?prevInput.selectionEnd:null;
  const msgs=currentChat?.messages||[];
  appEl.innerHTML=`<div class="h-full flex flex-col">
  <header class="h-16 shrink-0 glass border-b border-[var(--line)] flex items-center justify-between px-3 sm:px-5 z-20">
@@ -133,6 +153,14 @@ function render(){
   </main>
  </div></div>`;
  lucide.createIcons(); wireChat(); renderHistory();
+ if(keepValue){
+  const newInput=document.getElementById("input");
+  if(newInput){
+   newInput.value=keepValue;
+   newInput.style.height="auto";newInput.style.height=Math.min(newInput.scrollHeight,192)+"px";
+   if(hadFocus){newInput.focus();if(selStart!=null)newInput.setSelectionRange(selStart,selEnd)}
+  }
+ }
 }
 function messageHTML(m,i){
  const user=m.role==="user";const attachment=m.attachment;
