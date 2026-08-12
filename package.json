@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo AURA ready for Vercel"
+    "build": "echo AURA static build ready"
   },
   "dependencies": {
     "groq-sdk": "^0.3.3",
