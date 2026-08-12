@@ -1,7 +1,7 @@
 {
   "name": "AURA AI",
   "short_name": "AURA",
-  "start_url": "/",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#fbf8f4",
   "theme_color": "#d97757",
