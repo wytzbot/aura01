@@ -1,9 +1,16 @@
 {
-  "name": "AURA AI Pro",
+  "name": "AURA AI",
   "short_name": "AURA",
-  "icons": [{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }],
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020202",
-  "theme_color": "#FF7A00"
+  "background_color": "#fbf8f4",
+  "theme_color": "#d97757",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

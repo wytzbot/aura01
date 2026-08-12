@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+Disallow: /settings
+Disallow: /history
+Disallow: /account
+Disallow: /api/
+
+Sitemap: /sitemap.xml
+
+# AI crawler policy: respect this file and AURA's public content terms.

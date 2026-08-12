@@ -1,845 +1,284 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-  <title>AURA - Your Coding Partner</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            orange: '#FF5500',
-            darkOrange: '#CC4400',
-            darkBg: '#080808',
-            panelBg: '#121212',
-            borderDark: '#222222',
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Highlight.js & Marked -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Import Maps for Firebase -->
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-        "firebase/analytics": "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"
-      }
-    }
-  </script>
-
-  <style>
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    .bg-animated {
-      background: linear-gradient(-45deg, #000000, #0c0300, #1f0800, #330e00, #000000);
-      background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
-    }
-    .text-orange-gradient {
-      background: linear-gradient(135deg, #ffffff 0%, #FF5500 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
-    .content-zone { position: relative; z-index: 2; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #080808; }
-    ::-webkit-scrollbar-thumb { background: #222222; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #FF5500; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#d97757">
+<meta name="description" content="AURA — a general-purpose conversational AI by Wyte Tech Company.">
+<meta name="robots" content="index,follow">
+<link rel="manifest" href="/manifest.json">
+<title>AURA AI — Your everyday AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<script type="importmap">{"imports":{
+"firebase/app":"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+"firebase/auth":"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+"firebase/firestore":"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+"firebase/messaging":"https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js"
+}}</script>
+<style>
+:root{--accent:#d97757;--accent2:#c76145;--bg:#fbf8f4;--panel:#fffdfa;--ink:#27231f;--muted:#756f68;--line:#e9e1da}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;overscroll-behavior:none}
+button,input,textarea{font:inherit}button{touch-action:manipulation}.safe{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.fade{animation:fade .22s ease both}.pop{animation:pop .24s ease both}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.scroll{scrollbar-width:thin;scrollbar-color:#d8cec5 transparent}.prose p{margin:.55rem 0}.prose h1,.prose h2,.prose h3{font-weight:700;margin:1rem 0 .45rem}.prose ul{padding-left:1.25rem;list-style:disc}.prose ol{padding-left:1.25rem;list-style:decimal}.prose blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--muted)}
+.prose pre{overflow:auto;background:#211f1d;color:#f7f4ef;border-radius:14px;padding:14px}.prose code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.prose :not(pre)>code{background:#eee7e1;border-radius:6px;padding:2px 5px}
+.sheet{box-shadow:0 20px 60px rgba(35,25,20,.18)}.press:active{transform:scale(.97)}.glass{background:rgba(255,253,250,.86);backdrop-filter:blur(18px)}
+</style>
 </head>
-<body class="bg-darkBg text-gray-100 font-sans antialiased h-[100dvh] overflow-hidden flex flex-col select-none">
-
-  <canvas id="particleCanvas"></canvas>
-
-  <!-- Pull To Refresh Visual Indicator -->
-  <div id="pullSpinner" class="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-panelBg border border-orange/30 text-orange p-2 rounded-full shadow-lg opacity-0 pointer-events-none transition-all flex items-center gap-2 text-xs">
-    <i data-lucide="rotate-cw" class="w-4 h-4 animate-spin"></i>
-    <span>Refreshing app...</span>
-  </div>
-
-  <div id="app" class="content-zone flex-1 flex flex-col h-full overflow-hidden">
-
-    <!-- WELCOME PAGE -->
-    <section id="welcomePage" class="flex-1 flex flex-col items-center justify-center p-6 text-center bg-animated h-full">
-      <div class="max-w-md w-full flex flex-col items-center space-y-8">
-        <div class="space-y-3">
-          <div class="inline-flex items-center justify-center p-3 bg-orange/10 rounded-2xl border border-orange/20 mb-2">
-            <i data-lucide="sparkles" class="w-10 h-10 text-orange"></i>
-          </div>
-          <h1 class="text-5xl font-black tracking-tight text-orange-gradient">AURA</h1>
-          <p id="rotatingText" class="text-gray-400 font-medium text-lg transition-opacity duration-500">Your Coding Partner</p>
-        </div>
-        <div class="w-full space-y-3 pt-4">
-          <button id="btnStartCoding" class="w-full py-4 px-6 bg-orange text-black font-bold rounded-xl shadow-lg hover:bg-orange/90 transition cursor-pointer flex items-center justify-center gap-2">
-            <span>Start Coding (Sign In)</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>
-          </button>
-          <button onclick="skipLogin()" class="w-full py-3 px-6 bg-panelBg border border-orange/40 text-orange font-semibold rounded-xl hover:bg-orange/10 transition cursor-pointer text-xs flex items-center justify-center gap-2">
-            <span>⚡ Skip Login & Test AURA Instantly</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- AUTH PAGE -->
-    <section id="authPage" class="hidden flex-1 flex flex-col items-center justify-center p-4 bg-darkBg h-full overflow-y-auto">
-      <div class="w-full max-w-md bg-panelBg border border-borderDark rounded-2xl p-6 sm:p-8 shadow-2xl relative my-auto">
-        <button id="btnBackToWelcome" class="absolute top-6 left-6 text-gray-400 hover:text-white cursor-pointer"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-
-        <div class="text-center mb-6 pt-2">
-          <h2 id="authTitle" class="text-2xl font-bold text-white">Create Account</h2>
-          <p id="authSubtitle" class="text-xs text-gray-400 mt-1">Join AURA to save your chat history</p>
-        </div>
-
-        <button id="btnGoogleAuth" class="w-full py-3 px-4 bg-darkBg border border-borderDark hover:border-gray-700 rounded-xl text-sm font-medium text-gray-200 flex items-center justify-center gap-3 transition cursor-pointer mb-5">
-          <svg class="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          Continue with Google
-        </button>
-        
-        <div class="flex items-center my-4">
-          <div class="flex-1 border-t border-borderDark"></div>
-          <span class="px-3 text-xs text-gray-500 uppercase">Or email</span>
-          <div class="flex-1 border-t border-borderDark"></div>
-        </div>
-
-        <form id="authForm" class="space-y-4">
-          <div>
-            <label class="text-xs font-medium text-gray-400">Email Address</label>
-            <input type="email" id="inputEmail" required placeholder="name@company.com" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-400">Password</label>
-            <input type="password" id="inputPassword" required placeholder="••••••••" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
-          </div>
-          <div id="fieldConfirmPass">
-            <label class="text-xs font-medium text-gray-400">Confirm Password</label>
-            <input type="password" id="inputConfirmPassword" placeholder="••••••••" class="w-full bg-darkBg border border-borderDark rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange mt-1">
-          </div>
-          <div class="flex justify-between items-center">
-            <button type="button" onclick="skipLogin()" class="text-xs text-orange hover:underline cursor-pointer">⚡ Bypass Error / Skip</button>
-            <button type="button" id="btnForgotPassword" class="text-xs text-gray-400 hover:underline cursor-pointer">Forgot Password?</button>
-          </div>
-          <div id="authError" class="text-xs text-red-400 hidden bg-red-950/30 p-2.5 rounded-lg border border-red-800/40"></div>
-          <button type="submit" id="btnAuthSubmit" class="w-full py-3 bg-orange text-black font-bold rounded-xl hover:bg-orange/90 transition cursor-pointer text-sm">Sign Up</button>
-        </form>
-
-        <div class="text-center mt-6 flex flex-col gap-2">
-          <button id="btnToggleAuthMode" class="text-xs text-gray-400 hover:text-white cursor-pointer">
-            Already have an account? <span class="text-orange font-medium">Log In</span>
-          </button>
-          <button onclick="skipLogin()" class="text-xs text-orange font-semibold hover:underline cursor-pointer pt-2">
-            🚀 Skip & Use App Instantly
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- CHAT PAGE -->
-    <section id="chatPage" class="hidden flex-1 flex h-full overflow-hidden bg-darkBg relative">
-      <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 opacity-0 pointer-events-none transition-opacity md:hidden"></div>
-
-      <!-- Collapsible Sidebar -->
-      <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-panelBg border-r border-borderDark z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col h-full">
-        <div class="p-4 border-b border-borderDark flex items-center justify-between">
-          <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-orange"></i><span class="font-bold text-white">AURA AI</span></div>
-          <div class="flex items-center gap-1">
-            <button id="btnNewChat" class="p-2 text-orange border border-orange/20 rounded-lg text-xs font-semibold hover:bg-darkBg cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> New</button>
-            <button id="btnCloseSidebar" class="p-2 text-gray-400 hover:text-white md:hidden cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-        </div>
-        <div id="chatHistoryList" class="flex-1 overflow-y-auto px-3 space-y-1 py-2"></div>
-        <div class="p-4 border-t border-borderDark flex items-center justify-between bg-darkBg/50">
-          <div class="flex items-center gap-2 overflow-hidden">
-            <div id="userAvatar" class="w-8 h-8 rounded-full bg-orange/20 border border-orange/40 text-orange flex items-center justify-center font-bold text-xs uppercase">U</div>
-            <span id="userEmailDisplay" class="text-xs text-gray-300 truncate">user@aura.ai</span>
-          </div>
-          <button id="btnLogout" class="p-2 text-gray-400 hover:text-red-400 rounded-lg cursor-pointer" title="Log Out"><i data-lucide="log-out" class="w-4 h-4"></i></button>
-        </div>
-      </aside>
-
-      <!-- Main Chat Area -->
-      <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-darkBg">
-        <header class="h-14 border-b border-borderDark flex items-center justify-between px-4 bg-panelBg/80 shrink-0 z-10">
-          <button id="btnToggleSidebar" class="p-2 text-gray-300 hover:text-white rounded-lg cursor-pointer"><i data-lucide="menu" class="w-5 h-5"></i></button>
-          <span class="text-xs font-semibold text-gray-300 bg-darkBg px-3.5 py-1.5 rounded-full border border-orange/30 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange animate-pulse"></span>AURA AI</span>
-          <button id="btnHeaderNewChat" class="p-2 text-gray-300 hover:text-white rounded-lg cursor-pointer"><i data-lucide="square-pen" class="w-5 h-5"></i></button>
-        </header>
-
-        <div id="emptyGreeting" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div class="p-4 bg-orange/5 rounded-full border border-orange/10 mb-4"><i data-lucide="code-2" class="w-8 h-8 text-orange"></i></div>
-          <h2 id="rotatingGreet" class="text-2xl font-bold text-white mb-2 transition-opacity duration-500">Welcome back, legend! 🚀</h2>
-          <p class="text-gray-400 text-sm max-w-sm">Ask a question, upload photos, or attach code files to begin.</p>
-        </div>
-
-        <div id="messagesContainer" class="hidden flex-1 overflow-y-auto p-4 space-y-6"></div>
-
-        <!-- Input Bar -->
-        <div class="shrink-0 p-3 bg-black border-t border-orange/40 z-20 w-full pb-safe">
-          <div class="max-w-3xl mx-auto">
-            
-            <!-- Thumbnail Preview Bar -->
-            <div id="attachmentPreview" class="hidden mb-2 p-2 bg-panelBg border border-orange rounded-xl flex items-center justify-between gap-2 text-xs text-gray-300">
-              <div class="flex items-center gap-2 overflow-hidden">
-                <img id="imgPreviewThumb" class="w-12 h-12 object-cover rounded-lg border border-orange hidden" alt="Preview">
-                <i id="previewFileIcon" data-lucide="file-text" class="w-5 h-5 text-orange hidden shrink-0"></i>
-                <span id="attachmentName" class="truncate font-medium text-white">filename.txt</span>
-              </div>
-              <button id="btnRemoveAttachment" class="text-gray-400 hover:text-red-400 p-1 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-
-            <!-- Solid Black Input Container Box -->
-            <div style="background-color: #000000 !important; border: 1.5px solid #FF5500 !important;" class="rounded-2xl p-2 shadow-xl">
-              <textarea id="chatInput" rows="1" placeholder="Ask AURA anything..." style="background-color: #000000 !important; color: #ffffff !important;" class="w-full px-3 py-2 text-sm focus:outline-none resize-none max-h-32 min-h-[40px]"></textarea>
-              
-              <div class="flex items-center justify-between pt-2 px-1 border-t border-gray-800">
-                <div class="flex items-center gap-1">
-                  <input type="file" id="fileAttach" accept="image/*,text/*,.js,.jsx,.py,.html,.css,.json,.ts,.tsx" class="hidden">
-                  <button id="btnAttach" class="p-2 text-gray-400 hover:text-orange hover:bg-panelBg rounded-lg transition cursor-pointer" title="Attach file or image"><i data-lucide="paperclip" class="w-4 h-4"></i></button>
-                </div>
-
-                <button id="btnSend" class="p-2.5 bg-orange text-black font-bold rounded-xl hover:bg-orange/90 transition cursor-pointer"><i data-lucide="send" class="w-4 h-4"></i></button>
-              </div>
-            </div>
-            
-          </div>
-        </div>
-
-      </main>
-    </section>
-  </div>
-
-  <script type="module">
-    import { initializeApp, getApps } from "firebase/app";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, 
-      signOut, 
-      onAuthStateChanged, 
-      sendPasswordResetEmail,
-      GoogleAuthProvider,
-      signInWithPopup,
-      setPersistence, 
-      browserLocalPersistence 
-    } from "firebase/auth";
-    import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
-    import { getAnalytics, isSupported } from "firebase/analytics";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDTAqb0waoaoSDrwOa2UXRjwl8wmSyXUs0",
-      authDomain: "my-wyticle-id.firebaseapp.com",
-      projectId: "my-wyticle-id",
-      storageBucket: "my-wyticle-id.appspot.com",
-      messagingSenderId: "634169882815",
-      appId: "1:634169882815:web:486d39a13ce2f855c0ae0a",
-      measurementId: "G-7X84RSMH58"
-    };
-
-    let app, auth, db, googleProvider;
-    try {
-      app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-      auth = getAuth(app);
-      setPersistence(auth, browserLocalPersistence).catch(err => console.warn(err));
-      db = getFirestore(app);
-      googleProvider = new GoogleAuthProvider();
-      isSupported().then((supported) => { if (supported) getAnalytics(app); });
-    } catch(e) {
-      console.warn("Firebase offline mode enabled.");
-    }
-
-    const API_BACKEND_URL = "https://aura01-fawn.vercel.app/api/chat";
-
-    window.skipLogin = function() {
-      localStorage.setItem('aura_skipped_auth', 'true');
-      currentUser = { email: 'developer@aura.ai', uid: 'guest_dev' };
-      const wp = document.getElementById('welcomePage');
-      const ap = document.getElementById('authPage');
-      const cp = document.getElementById('chatPage');
-      if (wp) wp.classList.add('hidden');
-      if (ap) ap.classList.add('hidden');
-      if (cp) cp.classList.remove('hidden');
-      loadChats();
-    }
-
-    let currentUser = null, authIsSignUp = true, chats = [], currentChatId = null, attachmentData = null;
-
-    const welcomePage = document.getElementById('welcomePage');
-    const authPage = document.getElementById('authPage');
-    const chatPage = document.getElementById('chatPage');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const chatInput = document.getElementById('chatInput');
-    const btnSend = document.getElementById('btnSend');
-    const messagesContainer = document.getElementById('messagesContainer');
-    const emptyGreeting = document.getElementById('emptyGreeting');
-    const chatHistoryList = document.getElementById('chatHistoryList');
-
-    if (window.lucide) lucide.createIcons();
-
-    // Pull to Refresh Logic
-    let touchStartY = 0;
-    const pullSpinner = document.getElementById('pullSpinner');
-
-    window.addEventListener('touchstart', (e) => {
-      if (messagesContainer && messagesContainer.scrollTop === 0) touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-      if (messagesContainer && messagesContainer.scrollTop === 0 && pullSpinner) {
-        const pullDist = e.touches[0].clientY - touchStartY;
-        if (pullDist > 0 && pullDist < 120) {
-          pullSpinner.style.opacity = `${pullDist / 120}`;
-          pullSpinner.style.transform = `translate(-50%, ${pullDist / 2}px)`;
-        }
-      }
-    }, { passive: true });
-
-    window.addEventListener('touchend', (e) => {
-      if (messagesContainer && messagesContainer.scrollTop === 0 && (e.changedTouches[0].clientY - touchStartY) > 90) {
-        if (pullSpinner) pullSpinner.style.opacity = '1';
-        setTimeout(() => location.reload(), 400);
-      } else if (pullSpinner) {
-        pullSpinner.style.opacity = '0';
-        pullSpinner.style.transform = 'translate(-50%, 0px)';
-      }
-      touchStartY = 0;
-    });
-
-    // Canvas Particles
-    const canvas = document.getElementById('particleCanvas');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      let particles = [];
-      function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
-
-      class Particle {
-        constructor() { this.reset(); }
-        reset() {
-          this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
-          this.size = Math.random() * 2 + 1; this.speedX = (Math.random() - 0.5) * 0.5;
-          this.speedY = (Math.random() - 0.5) * 0.5; this.alpha = Math.random() * 0.5 + 0.2;
-        }
-        update() {
-          this.x += this.speedX; this.y += this.speedY;
-          if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
-        }
-        draw() {
-          ctx.fillStyle = `rgba(255, 85, 0, ${this.alpha})`;
-          ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-      for (let i = 0; i < 40; i++) particles.push(new Particle());
-      function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => { p.update(); p.draw(); });
-        requestAnimationFrame(animateParticles);
-      }
-      animateParticles();
-    }
-
-    // Auth & Navigation bindings
-    function showPage(page) {
-      if (welcomePage) welcomePage.classList.add('hidden');
-      if (authPage) authPage.classList.add('hidden');
-      if (chatPage) chatPage.classList.add('hidden');
-      if (page) page.classList.remove('hidden');
-    }
-
-    const btnStartCoding = document.getElementById('btnStartCoding');
-    if (btnStartCoding) btnStartCoding.onclick = () => { setAuthMode(true); showPage(authPage); };
-
-    const btnWelcomeLogin = document.getElementById('btnWelcomeLogin');
-    if (btnWelcomeLogin) btnWelcomeLogin.onclick = () => { setAuthMode(false); showPage(authPage); };
-
-    const btnBackToWelcome = document.getElementById('btnBackToWelcome');
-    if (btnBackToWelcome) btnBackToWelcome.onclick = () => showPage(welcomePage);
-
-    function setAuthMode(isSignUp) {
-      authIsSignUp = isSignUp;
-      const t = document.getElementById('authTitle');
-      const sub = document.getElementById('authSubtitle');
-      const conf = document.getElementById('fieldConfirmPass');
-      const subBtn = document.getElementById('btnAuthSubmit');
-      const toggle = document.getElementById('btnToggleAuthMode');
-      const err = document.getElementById('authError');
-
-      if (t) t.textContent = isSignUp ? "Create Account" : "Welcome Back";
-      if (sub) sub.textContent = isSignUp ? "Join AURA to save your chat history" : "Log in to access your chat history";
-      if (conf) conf.style.display = isSignUp ? 'block' : 'none';
-      if (subBtn) subBtn.textContent = isSignUp ? "Sign Up" : "Log In";
-      if (toggle) toggle.innerHTML = isSignUp 
-        ? 'Already have an account? <span class="text-orange font-medium">Log In</span>'
-        : 'Need an account? <span class="text-orange font-medium">Sign Up</span>';
-      if (err) err.classList.add('hidden');
-    }
-
-    const btnToggleAuthMode = document.getElementById('btnToggleAuthMode');
-    if (btnToggleAuthMode) btnToggleAuthMode.onclick = () => setAuthMode(!authIsSignUp);
-
-    const authForm = document.getElementById('authForm');
-    if (authForm) {
-      authForm.onsubmit = async (e) => {
-        e.preventDefault();
-        if (!auth) { skipLogin(); return; }
-        const email = document.getElementById('inputEmail').value.trim();
-        const password = document.getElementById('inputPassword').value;
-        const errorEl = document.getElementById('authError');
-        if (errorEl) errorEl.classList.add('hidden');
-
-        try {
-          if (authIsSignUp) {
-            const confirmPass = document.getElementById('inputConfirmPassword').value;
-            if (password !== confirmPass) throw new Error("Passwords do not match");
-            await createUserWithEmailAndPassword(auth, email, password);
-          } else {
-            await signInWithEmailAndPassword(auth, email, password);
-          }
-        } catch (err) {
-          if (errorEl) {
-            errorEl.textContent = err.message || "Authentication failed.";
-            errorEl.classList.remove('hidden');
-          }
-        }
-      };
-    }
-
-    const btnGoogleAuth = document.getElementById('btnGoogleAuth');
-    if (btnGoogleAuth) {
-      btnGoogleAuth.onclick = async () => {
-        if (!auth) { skipLogin(); return; }
-        const errorEl = document.getElementById('authError');
-        if (errorEl) errorEl.classList.add('hidden');
-        try {
-          await signInWithPopup(auth, googleProvider);
-        } catch (err) {
-          if (errorEl) {
-            errorEl.textContent = err.message || "Google sign-in failed.";
-            errorEl.classList.remove('hidden');
-          }
-        }
-      };
-    }
-
-    const btnForgotPassword = document.getElementById('btnForgotPassword');
-    if (btnForgotPassword) {
-      btnForgotPassword.onclick = async () => {
-        const email = prompt("Enter your email address to reset password:");
-        if (email && auth) {
-          try {
-            await sendPasswordResetEmail(auth, email.trim());
-            alert("Password reset email sent!");
-          } catch (err) { alert("Error: " + err.message); }
-        }
-      };
-    }
-
-    const btnLogout = document.getElementById('btnLogout');
-    if (btnLogout) {
-      btnLogout.onclick = () => {
-        localStorage.removeItem('aura_skipped_auth');
-        if (auth) signOut(auth);
-        location.reload();
-      };
-    }
-
-    // Sidebar Toggles
-    function openSidebar() { if (sidebar) sidebar.classList.remove('-translate-x-full'); if (sidebarOverlay) sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none'); }
-    function closeSidebar() { if (sidebar) sidebar.classList.add('-translate-x-full'); if (sidebarOverlay) sidebarOverlay.classList.add('opacity-0', 'pointer-events-none'); }
-    
-    const btnToggleSidebar = document.getElementById('btnToggleSidebar');
-    if (btnToggleSidebar) btnToggleSidebar.onclick = () => sidebar && sidebar.classList.contains('-translate-x-full') ? openSidebar() : closeSidebar();
-    
-    const btnCloseSidebar = document.getElementById('btnCloseSidebar');
-    if (btnCloseSidebar) btnCloseSidebar.onclick = closeSidebar;
-    
-    if (sidebarOverlay) sidebarOverlay.onclick = closeSidebar;
-
-    const btnNewChat = document.getElementById('btnNewChat');
-    if (btnNewChat) btnNewChat.onclick = createNewChat;
-
-    const btnHeaderNewChat = document.getElementById('btnHeaderNewChat');
-    if (btnHeaderNewChat) btnHeaderNewChat.onclick = createNewChat;
-
-    function createNewChat() {
-      currentChatId = Date.now().toString();
-      chats.unshift({ id: currentChatId, title: "New Conversation", messages: [] });
-      saveChats(); renderChatHistory(); selectChat(currentChatId);
-      if (window.innerWidth < 768) closeSidebar();
-    }
-
-    function saveChats() {
-      if (!currentUser) return;
-      localStorage.setItem(`aura_chats_${currentUser.uid}`, JSON.stringify(chats));
-      if (currentUser.uid !== 'guest_dev' && db) {
-        setDoc(doc(db, "users", currentUser.uid), { chats: chats }, { merge: true }).catch(err => console.warn(err));
-      }
-    }
-
-    async function loadChats() {
-      if (!currentUser) return;
-      const local = localStorage.getItem(`aura_chats_${currentUser.uid}`);
-      if (local) { try { chats = JSON.parse(local); renderChatHistory(); } catch (e) { chats = []; } }
-      if (chats.length === 0) createNewChat();
-      else selectChat(chats[0].id);
-
-      if (currentUser.uid !== 'guest_dev' && db) {
-        onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-          if (docSnap.exists() && docSnap.data().chats) {
-            chats = docSnap.data().chats;
-            localStorage.setItem(`aura_chats_${currentUser.uid}`, JSON.stringify(chats));
-            renderChatHistory(); if (currentChatId) renderMessages();
-          }
-        });
-      }
-    }
-
-    function renderChatHistory() {
-      if (!chatHistoryList) return;
-      chatHistoryList.innerHTML = "";
-      chats.forEach(chat => {
-        const item = document.createElement('div');
-        const isActive = chat.id === currentChatId;
-        item.className = `p-2.5 rounded-xl text-xs cursor-pointer flex items-center justify-between transition ${isActive ? 'bg-orange/10 text-orange border border-orange/20' : 'text-gray-300 hover:bg-darkBg'}`;
-        item.innerHTML = `<span class="truncate">${chat.title}</span>`;
-        item.onclick = () => { selectChat(chat.id); if (window.innerWidth < 768) closeSidebar(); };
-        chatHistoryList.appendChild(item);
-      });
-    }
-
-    function selectChat(id) { currentChatId = id; renderChatHistory(); renderMessages(); }
-
-    function renderMessages() {
-      if (!messagesContainer || !emptyGreeting) return;
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat || activeChat.messages.length === 0) {
-        emptyGreeting.classList.remove('hidden'); messagesContainer.classList.add('hidden'); messagesContainer.innerHTML = ''; return;
-      }
-      emptyGreeting.classList.add('hidden'); messagesContainer.classList.remove('hidden');
-      messagesContainer.innerHTML = '';
-      activeChat.messages.forEach((msg, idx) => messagesContainer.appendChild(createMessageElement(msg, idx)));
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function createMessageElement(msg, index) {
-      const isUser = msg.role === 'user';
-      const wrapper = document.createElement('div');
-      wrapper.className = `group flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1 relative mb-4`;
-
-      const contentDiv = document.createElement('div');
-      if (isUser) {
-        contentDiv.className = `max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tr-none p-4 text-sm leading-relaxed shadow-lg`;
-        contentDiv.style.backgroundColor = '#000000';
-        contentDiv.style.color = '#ffffff';
-        contentDiv.style.border = '1.5px solid #FF5500';
-      } else {
-        contentDiv.className = `max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tl-none p-4 text-sm leading-relaxed bg-panelBg border border-borderDark text-gray-100 shadow-lg`;
-      }
-
-      if (isUser) {
-        if (msg.attachment && msg.attachment.isImage && msg.attachment.data) {
-          const img = document.createElement('img');
-          img.src = msg.attachment.data;
-          img.className = "max-w-full max-h-56 rounded-xl mb-2 object-cover border border-orange/40 shadow";
-          contentDiv.appendChild(img);
-        }
-        if (msg.attachment && !msg.attachment.isImage && msg.attachment.name) {
-          const fileCard = document.createElement('div');
-          fileCard.className = "mb-2 p-2 bg-black/60 border border-orange/40 rounded-xl flex items-center gap-2 text-xs font-mono text-orange";
-          fileCard.innerHTML = `<i data-lucide="file-code" class="w-4 h-4 shrink-0"></i><span class="truncate">${msg.attachment.name}</span>`;
-          contentDiv.appendChild(fileCard);
-        }
-        if (msg.content) {
-          const p = document.createElement('p'); p.textContent = msg.content; contentDiv.appendChild(p);
-        }
-      } else {
-        contentDiv.innerHTML = parseMarkdown(msg.content);
-      }
-
-      const menu = document.createElement('div');
-      menu.className = "absolute z-30 hidden bg-panelBg border border-orange/40 rounded-xl shadow-2xl p-1.5 flex gap-2 text-xs -top-8 " + (isUser ? "right-0" : "left-0");
-      menu.innerHTML = `
-        <button onclick="editMessage(${index})" class="hover:text-orange px-2 py-1 flex items-center gap-1 cursor-pointer"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit</button>
-        <button onclick="copyMessage('${btoa(encodeURIComponent(msg.content || ''))}')" class="hover:text-orange px-2 py-1 flex items-center gap-1 cursor-pointer"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy</button>
-        <button onclick="regenerateMessage(${index})" class="hover:text-orange px-2 py-1 flex items-center gap-1 cursor-pointer"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Regenerate</button>
-        <button onclick="deleteMessage(${index})" class="text-red-400 hover:text-red-300 px-2 py-1 flex items-center gap-1 cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete</button>
-      `;
-
-      let timer;
-      const showMenu = (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.absolute.z-30').forEach(m => m.classList.add('hidden'));
-        menu.classList.remove('hidden');
-      };
-
-      contentDiv.addEventListener('touchstart', () => { timer = setTimeout(showMenu, 500); });
-      contentDiv.addEventListener('touchend', () => clearTimeout(timer));
-      contentDiv.addEventListener('touchmove', () => clearTimeout(timer));
-      contentDiv.addEventListener('contextmenu', showMenu);
-
-      wrapper.appendChild(contentDiv);
-      wrapper.appendChild(menu);
-      return wrapper;
-    }
-
-    function parseMarkdown(text) {
-      if (!window.marked) return text || "";
-      const rawHtml = marked.parse(text || "");
-      const temp = document.createElement('div');
-      temp.innerHTML = rawHtml;
-
-      temp.querySelectorAll('pre code').forEach((codeEl) => {
-        const langClass = Array.from(codeEl.classList).find(c => c.startsWith('language-'));
-        const lang = langClass ? langClass.replace('language-', '') : 'text';
-        const rawCode = (codeEl.innerText || codeEl.textContent).replace(/\\n/g, '\n').replace(/\\`/g, '`');
-
-        if (window.hljs) hljs.highlightElement(codeEl);
-
-        const pre = codeEl.parentElement;
-        const container = document.createElement('div');
-        container.className = "my-3 rounded-lg overflow-hidden border border-gray-700 bg-[#1e1e1e] text-left";
-
-        const header = document.createElement('div');
-        header.className = "flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-gray-700 text-xs font-mono";
-        
-        const copyBtnId = 'copy_btn_' + Math.random().toString(36).substr(2, 9);
-        const downloadBtnId = 'dl_btn_' + Math.random().toString(36).substr(2, 9);
-
-        header.innerHTML = `
-          <span class="text-orange-400 uppercase">${lang}</span>
-          <div class="flex gap-2">
-            <button id="${copyBtnId}" class="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded transition cursor-pointer">Copy</button>
-            <button id="${downloadBtnId}" class="flex items-center gap-1 px-3 py-1 text-xs bg-orange-600 hover:bg-orange-500 text-white rounded transition cursor-pointer">Download</button>
-          </div>
-        `;
-
-        container.appendChild(header);
-        pre.parentNode.insertBefore(container, pre);
-        container.appendChild(pre);
-
-        setTimeout(() => {
-          const cBtn = document.getElementById(copyBtnId);
-          if (cBtn) {
-            cBtn.onclick = async () => {
-              try {
-                await navigator.clipboard.writeText(rawCode);
-                cBtn.textContent = "Copied!";
-                setTimeout(() => { cBtn.textContent = "Copy"; }, 2000);
-              } catch (err) { alert("Copy failed."); }
-            };
-          }
-
-          const dBtn = document.getElementById(downloadBtnId);
-          if (dBtn) {
-            dBtn.onclick = () => {
-              const extMap = { javascript: 'js', js: 'js', jsx: 'jsx', python: 'py', html: 'html', css: 'css', json: 'json', ts: 'ts', text: 'txt' };
-              const ext = extMap[lang.toLowerCase()] || 'txt';
-              const blob = new Blob([rawCode], { type: "text/plain;charset=utf-8" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url; link.download = `code_snippet.${ext}`;
-              document.body.appendChild(link); link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            };
-          }
-        }, 0);
-      });
-
-      return temp.innerHTML;
-    }
-
-    window.copyMessage = function(b64) {
-      const text = decodeURIComponent(decodeURIComponent(escape(atob(b64))));
-      navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
-    }
-
-    window.deleteMessage = function(index) {
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat) return;
-      activeChat.messages = activeChat.messages.slice(0, index);
-      saveChats(); renderMessages();
-    }
-
-    window.regenerateMessage = function(index) {
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat) return;
-      activeChat.messages = activeChat.messages.slice(0, index);
-      saveChats(); renderMessages();
-      sendPromptToAI();
-    }
-
-    window.editMessage = function(index) {
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat) return;
-      const newText = prompt("Edit message:", activeChat.messages[index].content);
-      if (newText !== null) {
-        activeChat.messages = activeChat.messages.slice(0, index);
-        activeChat.messages.push({ role: 'user', content: newText });
-        saveChats(); renderMessages(); sendPromptToAI();
-      }
-    }
-
-    // Attachment Pipeline
-    const btnAttach = document.getElementById('btnAttach');
-    const fileAttach = document.getElementById('fileAttach');
-    if (btnAttach && fileAttach) {
-      btnAttach.onclick = () => fileAttach.click();
-      fileAttach.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const isImage = file.type.startsWith('image/');
-        const reader = new FileReader();
-
-        if (isImage) {
-          reader.onload = (event) => {
-            attachmentData = { name: file.name, mimeType: file.type, data: event.target.result, isImage: true };
-            const thumb = document.getElementById('imgPreviewThumb');
-            if (thumb) { thumb.src = event.target.result; thumb.classList.remove('hidden'); }
-            const pIcon = document.getElementById('previewFileIcon');
-            if (pIcon) pIcon.classList.add('hidden');
-            const aName = document.getElementById('attachmentName');
-            if (aName) aName.textContent = file.name;
-            const aPrev = document.getElementById('attachmentPreview');
-            if (aPrev) aPrev.classList.remove('hidden');
-          };
-          reader.readAsDataURL(file);
-        } else {
-          reader.onload = (event) => {
-            attachmentData = { name: file.name, content: event.target.result, isImage: false };
-            const thumb = document.getElementById('imgPreviewThumb');
-            if (thumb) thumb.classList.add('hidden');
-            const pIcon = document.getElementById('previewFileIcon');
-            if (pIcon) pIcon.classList.remove('hidden');
-            const aName = document.getElementById('attachmentName');
-            if (aName) aName.textContent = file.name;
-            const aPrev = document.getElementById('attachmentPreview');
-            if (aPrev) aPrev.classList.remove('hidden');
-            if (window.lucide) lucide.createIcons();
-          };
-          reader.readAsText(file);
-        }
-      };
-    }
-
-    const btnRemoveAttachment = document.getElementById('btnRemoveAttachment');
-    if (btnRemoveAttachment) {
-      btnRemoveAttachment.onclick = () => {
-        attachmentData = null; 
-        if (fileAttach) fileAttach.value = "";
-        const aPrev = document.getElementById('attachmentPreview');
-        if (aPrev) aPrev.classList.add('hidden');
-      };
-    }
-
-    if (chatInput) {
-      chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
-      });
-    }
-
-    if (btnSend) btnSend.onclick = handleSendMessage;
-
-    function handleSendMessage() {
-      if (!chatInput) return;
-      let promptText = chatInput.value.trim();
-      if (!promptText && !attachmentData) return;
-      const currentAttachment = attachmentData;
-
-      attachmentData = null;
-      if (fileAttach) fileAttach.value = "";
-      const aPrev = document.getElementById('attachmentPreview');
-      if (aPrev) aPrev.classList.add('hidden');
-      chatInput.value = "";
-
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat) return;
-      if (activeChat.messages.length === 0) {
-        activeChat.title = (promptText || "Media Attachment").slice(0, 30) + "...";
-      }
-
-      activeChat.messages.push({ role: 'user', content: promptText, attachment: currentAttachment });
-      saveChats(); renderChatHistory(); renderMessages(); sendPromptToAI();
-    }
-
-    async function sendPromptToAI() {
-      const activeChat = chats.find(c => c.id === currentChatId);
-      if (!activeChat) return;
-      const lastUserMsg = activeChat.messages[activeChat.messages.length - 1];
-
-      const aiMessageObj = { role: 'assistant', content: "Analyzing your request right now... 💬✨" };
-      activeChat.messages.push(aiMessageObj);
-      renderMessages();
-      if (btnSend) btnSend.disabled = true;
-
-      try { 
-        const API_BACKEND_URL = "https://aura01-fawn.vercel.app/api/chat";
-        const response = await fetch(API_BACKEND_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: activeChat.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-            prompt: lastUserMsg?.content || "",
-            attachment: lastUserMsg?.attachment || null
-          })
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.text || "Server error");
-        
-        // FIXED: Explicitly bind the returned text content from server response
-        aiMessageObj.content = data.text || "Hmm, I received an empty response. Try again!";
-      } catch (err) {
-        aiMessageObj.content = `⚠️ Connection Notice: Could not reach backend server at ${API_BACKEND_URL}. (Error: ${err.message})`;
-      } finally {
-        if (btnSend) btnSend.disabled = false; 
-        saveChats(); 
-        renderMessages();
-      }
-    }
-
-    if (auth) {
-      onAuthStateChanged(auth, (user) => {
-        const skippedAuth = localStorage.getItem('aura_skipped_auth') === 'true';
-        currentUser = user || (skippedAuth ? { email: 'developer@aura.ai', uid: 'guest_dev' } : null);
-
-        if (currentUser) {
-          const ed = document.getElementById('userEmailDisplay');
-          if (ed) ed.textContent = currentUser.email || 'User';
-          const ua = document.getElementById('userAvatar');
-          if (ua) ua.textContent = (currentUser.email || 'U').charAt(0).toUpperCase();
-          showPage(chatPage); loadChats();
-        } else {
-          if (welcomePage && !welcomePage.classList.contains('hidden') || chatPage && !chatPage.classList.contains('hidden')) showPage(welcomePage);
-        }
-      });
-    } else {
-      skipLogin();
-    }
-  </script>
-</body>
-</html>
+<body>
+<div id="app" class="h-full"></div>
+
+<template id="authTemplate"><main class="h-full flex items-center justify-center p-5 bg-[var(--bg)]"><div class="w-full max-w-md fade">
+<div class="text-center mb-8"><div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-[#f2e0d8] flex items-center justify-center"><i data-lucide="sparkles" class="w-7 h-7 text-[var(--accent)]"></i></div><h1 class="text-4xl font-bold tracking-tight">AURA</h1><p class="text-[var(--muted)] mt-2 text-base">A calm, capable AI for everyday work and life.</p></div>
+<div class="bg-[var(--panel)] border border-[var(--line)] rounded-3xl p-6 sheet">
+<button id="googleBtn" class="press w-full h-12 rounded-2xl border border-[var(--line)] bg-white flex items-center justify-center gap-3 font-semibold hover:bg-[#f8f4f0]"><span class="text-lg">G</span> Continue with Google</button>
+<div class="flex items-center gap-3 my-5 text-xs text-[var(--muted)]"><span class="h-px bg-[var(--line)] flex-1"></span>OR EMAIL<span class="h-px bg-[var(--line)] flex-1"></span></div>
+<form id="authForm" class="space-y-4">
+<label class="block"><span class="text-sm font-semibold">Email</span><input id="email" type="email" required autocomplete="email" class="mt-1 w-full h-12 rounded-2xl border border-[var(--line)] bg-white px-4 outline-none focus:ring-2 focus:ring-[#e7b5a4]"></label>
+<label class="block"><span class="text-sm font-semibold">Password</span><input id="password" type="password" required autocomplete="current-password" class="mt-1 w-full h-12 rounded-2xl border border-[var(--line)] bg-white px-4 outline-none focus:ring-2 focus:ring-[#e7b5a4]"></label>
+<label id="confirmWrap" class="block hidden"><span class="text-sm font-semibold">Confirm password</span><input id="confirm" type="password" autocomplete="new-password" class="mt-1 w-full h-12 rounded-2xl border border-[var(--line)] bg-white px-4"></label>
+<div id="authError" class="hidden rounded-2xl bg-[#fff0ec] text-[#9d4c39] p-3 text-sm"></div>
+<button id="authSubmit" class="press w-full h-12 rounded-2xl bg-[var(--accent)] text-white font-bold">Create account</button>
+</form>
+<div class="flex justify-between mt-5 text-sm"><button id="modeBtn" class="text-[var(--accent)] font-semibold">I already have an account</button><button id="forgotBtn" class="text-[var(--muted)]">Forgot password?</button></div>
+<p class="text-xs text-[var(--muted)] text-center mt-6">By continuing, you agree to AURA's Terms and Privacy Policy.</p>
+</div></div></main></template>
+
+<script src="/config.js"></script>
+<script type="module">
+import {initializeApp,getApps} from "firebase/app";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,sendPasswordResetEmail,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "firebase/auth";
+import {getFirestore,collection,doc,getDoc,setDoc,addDoc,query,orderBy,limit,getDocs,deleteDoc,serverTimestamp} from "firebase/firestore";
+import {getMessaging,getToken,onMessage,isSupported as messagingSupported} from "firebase/messaging";
+
+const firebaseConfig=window.AURA_FIREBASE_CONFIG;
+const app=!getApps().length?initializeApp(firebaseConfig):getApps()[0];
+const auth=getAuth(app); await setPersistence(auth,browserLocalPersistence);
+const db=getFirestore(app); const google=new GoogleAuthProvider();
+const API="/api"; let user=null,currentChat=null,chats=[],busy=false,authMode="signup",plan="free";
+
+const appEl=document.getElementById("app");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const notify=(msg,type="info")=>{const n=document.createElement("div");n.className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-[90vw] px-4 py-3 rounded-2xl bg-[#27231f] text-white text-sm shadow-2xl fade";n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),3200)};
+const friendly=e=>{const m=e?.message||""; if(/network|fetch|failed to fetch/i.test(m))return"AURA couldn't reach its AI service just now. Your account is safe — please try again in a moment.";if(/popup/i.test(m))return"Google sign-in was interrupted. Please allow popups for AURA and try again.";if(/invalid-credential|wrong-password/i.test(m))return"That email or password doesn't match. Please check it and try again.";if(/email-already/i.test(m))return"An account already exists with that email. Try signing in instead.";if(/weak-password/i.test(m))return"Choose a stronger password (at least 6 characters).";return m.replace(/^Firebase:\s*/,"").replace(/\s*\(auth\/[^)]+\)\.?/,"")||"Something went wrong. Please try again."};
+
+function renderAuth(){
+ appEl.innerHTML=document.getElementById("authTemplate").innerHTML; lucide.createIcons();
+ const submit=document.getElementById("authSubmit"), mode=document.getElementById("modeBtn"), confirm=document.getElementById("confirmWrap"), title=document.querySelector("#authTemplate h1");
+ const update=()=>{submit.textContent=authMode==="signup"?"Create account":"Log in";confirm.classList.toggle("hidden",authMode!=="signup");mode.textContent=authMode==="signup"?"I already have an account":"Create a new account"};
+ update();
+ mode.onclick=()=>{authMode=authMode==="signup"?"login":"signup";update();document.getElementById("authError").classList.add("hidden")};
+ document.getElementById("forgotBtn").onclick=async()=>{const email=document.getElementById("email").value.trim();if(!email)return notify("Enter your email first.");try{await sendPasswordResetEmail(auth,email);notify("Password reset instructions are on their way.");}catch(e){notify(friendly(e),"error")}};
+ document.getElementById("googleBtn").onclick=async()=>{const b=document.getElementById("googleBtn");b.disabled=true;b.textContent="Opening secure Google sign-in…";try{await signInWithPopup(auth,google)}catch(e){document.getElementById("authError").textContent=friendly(e);document.getElementById("authError").classList.remove("hidden")}finally{b.disabled=false;b.innerHTML='<span class="text-lg">G</span> Continue with Google'}};
+ document.getElementById("authForm").onsubmit=async e=>{e.preventDefault();const er=document.getElementById("authError");er.classList.add("hidden");submit.disabled=true;submit.textContent=authMode==="signup"?"Creating…":"Signing in…";try{const email=document.getElementById("email").value.trim(),pass=document.getElementById("password").value;if(authMode==="signup"){if(pass!==document.getElementById("confirm").value)throw Error("Passwords do not match.");await createUserWithEmailAndPassword(auth,email,pass)}else await signInWithEmailAndPassword(auth,email,pass)}catch(x){er.textContent=friendly(x);er.classList.remove("hidden")}finally{submit.disabled=false;update()}};
+}
+
+async function token(){if(!user)throw Error("Please sign in first.");return user.getIdToken()};
+async function api(path,body){const t=await token();const r=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+t},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"AURA couldn't complete that request.");return d}
+
+async function saveUser(){if(!user)return;await setDoc(doc(db,"users",user.uid),{email:user.email||"",displayName:user.displayName||"",updatedAt:serverTimestamp()},{merge:true})}
+async function loadPlan(){const s=await getDoc(doc(db,"users",user.uid));plan=s.exists()?s.data().plan||"free":"free"}
+async function loadChats(){const q=query(collection(db,"users",user.uid,"chats"),orderBy("updatedAt","desc"),limit(30));const snap=await getDocs(q);chats=snap.docs.map(d=>({id:d.id,...d.data(),messages:[]}));if(!chats.length)await newChat(false);else await openChat(chats[0].id)}
+async function loadMessages(id){const q=query(collection(db,"users",user.uid,"chats",id,"messages"),orderBy("createdAt","asc"),limit(100));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}))}
+async function newChat(close=true){const r=await addDoc(collection(db,"users",user.uid,"chats"),{title:"New conversation",createdAt:serverTimestamp(),updatedAt:serverTimestamp()});const c={id:r.id,title:"New conversation",messages:[]};chats.unshift(c);currentChat=c;render();if(close)closeMenu()}
+async function openChat(id){const c=chats.find(x=>x.id===id);if(!c)return;c.messages=await loadMessages(id);currentChat=c;render();closeMenu()}
+async function saveMessage(m){const r=await addDoc(collection(db,"users",user.uid,"chats",currentChat.id,"messages"),{role:m.role,content:m.content,attachment:m.attachment||null,createdAt:serverTimestamp()});m.id=r.id;await setDoc(doc(db,"users",user.uid,"chats",currentChat.id),{updatedAt:serverTimestamp(),title:currentChat.title},{merge:true})}
+async function removeChat(id){await deleteDoc(doc(db,"users",user.uid,"chats",id));chats=chats.filter(c=>c.id!==id);if(!chats.length)return newChat(false);await openChat(chats[0].id)}
+function closeMenu(){document.getElementById("drawer")?.classList.add("-translate-x-full");document.getElementById("shade")?.classList.add("hidden")}
+
+function render(){
+ const msgs=currentChat?.messages||[];
+ appEl.innerHTML=`<div class="h-full flex flex-col">
+ <header class="h-16 shrink-0 glass border-b border-[var(--line)] flex items-center justify-between px-3 sm:px-5 z-20">
+  <button id="menuBtn" class="press p-3 rounded-2xl hover:bg-[#f1e9e3]"><i data-lucide="menu"></i></button>
+  <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-xl bg-[#f2e0d8] flex items-center justify-center"><i data-lucide="sparkles" class="w-4 h-4 text-[var(--accent)]"></i></div><b>AURA</b><span class="text-xs text-[var(--muted)]">AI</span></div>
+  <button id="newTop" class="press p-3 rounded-2xl hover:bg-[#f1e9e3]"><i data-lucide="square-pen"></i></button>
+ </header>
+ <div class="flex-1 min-h-0 relative">
+  <aside id="drawer" class="sheet fixed md:absolute inset-y-0 left-0 w-[310px] max-w-[88vw] bg-[var(--panel)] border-r border-[var(--line)] z-50 -translate-x-full md:translate-x-0 transition-transform duration-200 flex flex-col">
+   <div class="p-4 flex items-center justify-between border-b border-[var(--line)]"><b class="text-lg">AURA</b><button id="closeMenu" class="md:hidden p-2"><i data-lucide="x"></i></button></div>
+   <div class="p-3 space-y-2"><button id="newSide" class="press w-full h-11 rounded-2xl bg-[#f2e0d8] text-[var(--accent2)] font-bold flex items-center justify-center gap-2"><i data-lucide="plus"></i> New chat</button><button id="searchBtn" class="press w-full h-11 rounded-2xl border border-[var(--line)] flex items-center gap-2 px-4"><i data-lucide="search"></i> Search chats</button></div>
+   <div class="px-4 text-xs uppercase tracking-wider text-[var(--muted)]">Recent</div><div id="history" class="scroll flex-1 overflow-y-auto p-3 space-y-1"></div>
+   <div class="border-t border-[var(--line)] p-3 space-y-1">
+    <button id="upgrade" class="w-full text-left p-3 rounded-2xl hover:bg-[#f6eee9] flex gap-3"><i data-lucide="crown"></i><span><b>Upgrade to Pro</b><small class="block text-[var(--muted)]">$5 / ₦5,000 monthly</small></span></button>
+    <button id="settings" class="w-full text-left p-3 rounded-2xl hover:bg-[#f6eee9] flex gap-3"><i data-lucide="settings"></i> Settings</button>
+    <button id="info" class="w-full text-left p-3 rounded-2xl hover:bg-[#f6eee9] flex gap-3"><i data-lucide="circle-help"></i> FAQ & About</button>
+    <button id="logout" class="w-full text-left p-3 rounded-2xl hover:bg-[#fff0ec] text-[#9d4c39] flex gap-3"><i data-lucide="log-out"></i> Sign out</button>
+   </div>
+  </aside><div id="shade" class="hidden fixed inset-0 bg-black/25 z-40 md:hidden"></div>
+  <main class="h-full md:pl-[310px] flex flex-col">
+   <div id="messages" class="scroll flex-1 overflow-y-auto px-4 py-6 sm:px-6">${msgs.length?msgs.map(messageHTML).join(""):`<div class="h-full flex items-center justify-center"><div class="max-w-xl w-full text-center pop"><div class="mx-auto w-16 h-16 rounded-3xl bg-[#f2e0d8] flex items-center justify-center mb-5"><i data-lucide="sparkles" class="w-8 h-8 text-[var(--accent)]"></i></div><h2 class="text-3xl sm:text-4xl font-bold">What can I help with?</h2><p class="text-[var(--muted)] mt-3 text-lg">Chat, write, analyze images, study, code, or create something new.</p><div class="grid grid-cols-2 gap-2 mt-7"><button class="suggest p-4 rounded-2xl bg-white border border-[var(--line)] text-left">✍️ Write a blog post</button><button class="suggest p-4 rounded-2xl bg-white border border-[var(--line)] text-left">🖼️ Create an image</button><button class="suggest p-4 rounded-2xl bg-white border border-[var(--line)] text-left">📷 Analyze an image</button><button class="suggest p-4 rounded-2xl bg-white border border-[var(--line)] text-left">💡 Brainstorm an idea</button></div></div></div>`}</div>
+   <div class="safe p-3 sm:p-5 bg-[var(--bg)]"><div class="max-w-3xl mx-auto">
+    <div id="attachPreview" class="hidden mb-2 bg-white border border-[var(--line)] rounded-2xl p-2 flex items-center gap-3"><img id="attachImg" class="hidden w-12 h-12 rounded-xl object-cover"><i id="attachIcon" data-lucide="file-text" class="text-[var(--accent)]"></i><span id="attachName" class="truncate flex-1"></span><button id="removeAttach" class="p-2"><i data-lucide="x"></i></button></div>
+    <div class="bg-white border border-[var(--line)] rounded-[24px] p-2 shadow-sm focus-within:ring-2 focus-within:ring-[#ecd1c7]"><textarea id="input" rows="1" class="w-full px-3 pt-2 resize-none outline-none bg-transparent text-[17px] leading-7 max-h-48" placeholder="Message AURA…"></textarea><div class="flex justify-between items-center pt-2 px-1"><label class="press p-3 rounded-2xl hover:bg-[#f6eee9] cursor-pointer" title="Attach"><i data-lucide="paperclip"></i><input id="file" type="file" class="hidden" accept="image/*,.txt,.md,.json,.js,.jsx,.ts,.tsx,.html,.css,.csv,.pdf,.docx"></label><div class="flex gap-2"><button id="imageBtn" class="press px-3 py-2 rounded-2xl text-sm font-semibold hover:bg-[#f6eee9] flex gap-1 items-center"><i data-lucide="image"></i><span class="hidden sm:inline">Create image</span></button><button id="send" class="press w-11 h-11 rounded-2xl bg-[var(--accent)] text-white flex items-center justify-center"><i data-lucide="arrow-up"></i></button></div></div></div><p class="text-[11px] text-center text-[var(--muted)] mt-2">AURA may make mistakes. Check important information.</p>
+   </div></div>
+  </main>
+ </div></div>`;
+ lucide.createIcons(); wireChat(); renderHistory();
+}
+function messageHTML(m,i){
+ const user=m.role==="user";const attachment=m.attachment;
+ return `<article class="fade max-w-3xl mx-auto mb-7 flex ${user?"justify-end":"justify-start"}"><div class="${user?"bg-[#292521] text-white rounded-[22px] rounded-br-md":"w-full"} ${user?"max-w-[88%] sm:max-w-[75%] px-4 py-3":""}">
+ ${attachment?.isImage?`<img src="${esc(attachment.data||attachment.url||"")}" class="max-w-full max-h-72 rounded-2xl mb-3 object-contain">`:attachment?.name?`<div class="mb-2 p-3 rounded-2xl bg-[#f5eee9] text-[var(--ink)] flex items-center gap-2"><i data-lucide="file-text"></i>${esc(attachment.name)}</div>`:""}
+ ${m.content?user?`<div class="whitespace-pre-wrap text-[16px] leading-7">${esc(m.content)}</div>`:`<div class="prose text-[17px] leading-7">${safeMarkdown(m.content)}</div>`:""}
+ ${!user?`<div class="flex gap-1 mt-3">${attachment?.isImage?`<button class="editImg p-2 rounded-xl hover:bg-[#f1e9e3]" data-i="${i}" title="Edit image"><i data-lucide="wand-sparkles" class="w-4"></i></button>`:""}<button class="copyMsg p-2 rounded-xl hover:bg-[#f1e9e3]" data-i="${i}" title="Copy"><i data-lucide="copy" class="w-4"></i></button><button class="regen p-2 rounded-xl hover:bg-[#f1e9e3]" data-i="${i}" title="Regenerate"><i data-lucide="refresh-cw" class="w-4"></i></button></div>`:""}
+ </div></article>`;
+}
+function safeMarkdown(t){return DOMPurify.sanitize(marked.parse(t||""))}
+function renderHistory(){const h=document.getElementById("history");if(!h)return;h.innerHTML=chats.map(c=>`<button data-id="${c.id}" class="chatItem w-full text-left p-3 rounded-2xl hover:bg-[#f6eee9] truncate ${currentChat?.id===c.id?"bg-[#f2e0d8]":""}">${esc(c.title||"New conversation")}</button>`).join("");h.querySelectorAll(".chatItem").forEach(b=>b.onclick=()=>openChat(b.dataset.id))}
+let attachment=null;
+function wireChat(){
+ const drawer=document.getElementById("drawer"),shade=document.getElementById("shade"),open=()=>{drawer.classList.remove("-translate-x-full");shade.classList.remove("hidden")},close=()=>{drawer.classList.add("-translate-x-full");shade.classList.add("hidden")};
+ document.getElementById("menuBtn").onclick=open;document.getElementById("closeMenu").onclick=close;shade.onclick=close;
+ document.getElementById("newTop").onclick=()=>newChat();document.getElementById("newSide").onclick=()=>newChat();document.getElementById("logout").onclick=()=>signOut(auth);
+ document.getElementById("upgrade").onclick=showBilling;document.getElementById("settings").onclick=showSettings;document.getElementById("info").onclick=showInfo;
+ document.querySelectorAll(".suggest").forEach(b=>b.onclick=()=>{document.getElementById("input").value=b.textContent.replace(/^.\s/,"");document.getElementById("input").focus()});
+ const input=document.getElementById("input");input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,192)+"px"});input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});document.getElementById("send").onclick=send;document.getElementById("imageBtn").onclick=generateImage;
+ document.getElementById("file").onchange=e=>handleFile(e.target.files[0]);document.getElementById("removeAttach").onclick=()=>{attachment=null;document.getElementById("attachPreview").classList.add("hidden")};
+ document.querySelectorAll(".copyMsg").forEach(b=>b.onclick=()=>navigator.clipboard.writeText(currentChat.messages[+b.dataset.i].content).then(()=>notify("Copied.")));
+ document.querySelectorAll(".regen").forEach(b=>b.onclick=()=>regenerate(+b.dataset.i));document.querySelectorAll(".editImg").forEach(b=>b.onclick=()=>editGeneratedImage(+b.dataset.i));
+ document.getElementById("searchBtn").onclick=searchChats;
+}
+function handleFile(file){
+ if(!file)return;
+ if(file.size>8*1024*1024)return notify("That file is too large. Please keep uploads under 8 MB.");
+ const image=file.type.startsWith("image/"), binary=image||file.type==="application/pdf"||file.name.toLowerCase().endsWith(".docx");
+ const r=new FileReader();
+ r.onload=()=>{
+  attachment={name:file.name,mimeType:file.type,data:binary?r.result:null,isImage:image,content:binary?null:String(r.result).slice(0,30000)};
+  document.getElementById("attachPreview").classList.remove("hidden");
+  document.getElementById("attachName").textContent=file.name;
+  document.getElementById("attachImg").classList.toggle("hidden",!image);
+  document.getElementById("attachIcon").classList.toggle("hidden",image);
+  if(image)document.getElementById("attachImg").src=r.result;
+  lucide.createIcons();
+ };
+ if(binary)r.readAsDataURL(file);else r.readAsText(file);
+}
+async function generateImage(){
+ if(busy)return;
+ const input=document.getElementById("input"),prompt=input.value.trim();
+ if(!prompt)return notify("Describe the image you want AURA to create.");
+ busy=true;const btn=document.getElementById("imageBtn");btn.disabled=true;btn.innerHTML='<i data-lucide="loader-2" class="animate-spin"></i> Creating…';lucide.createIcons();
+ try{
+  const d=await api("/image",{prompt,size:"square"});
+  const m={role:"assistant",content:`![Generated image](${d.url})`,attachment:{name:"AURA generated image",isImage:true,url:d.url,mimeType:"image/*"}};
+  currentChat.messages.push({role:"user",content:prompt});
+  currentChat.messages.push(m);
+  await saveMessage(currentChat.messages[currentChat.messages.length-2]);
+  await saveMessage(m);
+  input.value="";
+  render();
+ }catch(e){notify(friendly(e))}
+ finally{busy=false}
+}
+async function send(){
+ if(busy)return;const input=document.getElementById("input"),text=input.value.trim();if(!text&&!attachment)return;
+ const a=attachment;attachment=null;document.getElementById("attachPreview").classList.add("hidden");input.value="";input.style.height="auto";
+ const userMsg={role:"user",content:text,attachment:a};currentChat.messages.push(userMsg);if(currentChat.messages.length===1){currentChat.title=(text||a?.name||"New conversation").slice(0,45);setDoc(doc(db,"users",user.uid,"chats",currentChat.id),{title:currentChat.title,updatedAt:serverTimestamp()},{merge:true})}
+ await saveMessage(userMsg);render();busy=true;const sendBtn=document.getElementById("send");if(sendBtn){sendBtn.disabled=true;sendBtn.innerHTML='<i data-lucide="loader-2" class="animate-spin"></i>';lucide.createIcons()}
+ const ai={role:"assistant",content:"AURA is thinking…"};currentChat.messages.push(ai);render();
+ try{
+  const d=await api("/chat",{messages:currentChat.messages.slice(0,-1).map(x=>({role:x.role,content:x.content})),prompt:text,attachment:a});
+  ai.content=d.text||"I couldn't produce a response this time.";await saveMessage(ai);
+ }catch(e){ai.content=friendly(e);await saveMessage(ai)}
+ finally{busy=false;render()}
+}
+async function regenerate(i){if(busy)return;const m=currentChat.messages[i-1];if(!m||m.role!=="user")return;currentChat.messages=currentChat.messages.slice(0,i);render();const fakeInput=document.getElementById("input");fakeInput.value=m.content;await send()}
+async function editGeneratedImage(i){
+ const m=currentChat.messages[i], src=m?.attachment?.url||m?.attachment?.data;if(!src)return;
+ const box=overlay("Edit image",`<img src="${esc(src)}" class="w-full max-h-72 object-contain rounded-2xl bg-[#f3eee9]"><textarea id="editPrompt" class="mt-4 w-full rounded-2xl border border-[var(--line)] p-3 min-h-24 outline-none" placeholder="Tell AURA what to change…"></textarea><button id="doEdit" class="mt-3 w-full h-12 rounded-2xl bg-[var(--accent)] text-white font-bold">Generate edit</button>`);
+ box.querySelector("#doEdit").onclick=async()=>{
+  const prompt=box.querySelector("#editPrompt").value.trim();if(!prompt)return notify("Describe the change first.");
+  const b=box.querySelector("#doEdit");b.disabled=true;b.textContent="Editing…";
+  try{const d=await api("/image",{prompt,imageUrl:src});m.attachment.url=d.url;m.content=`![Edited image](${d.url})`;await saveMessage(m);box.remove();render();}catch(e){notify(friendly(e))}finally{b.disabled=false;b.textContent="Generate edit"}
+ };
+}
+function searchChats(){
+ const box=overlay("Search chats",`<input id="chatSearchInput" type="text" inputmode="search" autocomplete="off" placeholder="Search your recent chats…" class="w-full h-12 rounded-2xl border border-[var(--line)] bg-white px-4 outline-none focus:ring-2 focus:ring-[#e7b5a4]"><div id="chatSearchResults" class="mt-4 space-y-1 max-h-[50vh] overflow-y-auto"></div>`);
+ const input=box.querySelector("#chatSearchInput"),results=box.querySelector("#chatSearchResults");
+ const paint=term=>{
+  const t=term.trim().toLowerCase();
+  const hits=t?chats.filter(c=>(c.title||"").toLowerCase().includes(t)):chats;
+  results.innerHTML=hits.length
+   ?hits.map(c=>`<button data-id="${c.id}" class="chatHit w-full text-left p-3 rounded-2xl hover:bg-[#f6eee9] truncate">${esc(c.title||"New conversation")}</button>`).join("")
+   :`<p class="text-sm text-[var(--muted)] p-3">${t?"No matching recent chats.":"Start typing to search your recent chats."}</p>`;
+  results.querySelectorAll(".chatHit").forEach(b=>b.onclick=()=>{openChat(b.dataset.id);box.remove()});
+ };
+ paint("");
+ input.addEventListener("input",()=>paint(input.value));
+ input.focus();
+}
+function overlay(title,body){const x=document.createElement("div");x.className="fixed inset-0 z-[80] bg-black/30 flex items-end sm:items-center justify-center p-0 sm:p-5";x.innerHTML=`<div class="sheet bg-[var(--panel)] w-full sm:max-w-lg max-h-[88vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px] p-6 fade"><div class="flex justify-between items-center mb-5"><h2 class="text-2xl font-bold">${title}</h2><button class="close p-2"><i data-lucide="x"></i></button></div>${body}</div></div>`;document.body.appendChild(x);lucide.createIcons();x.querySelector(".close").onclick=()=>x.remove();return x}
+function showSettings(){const box=overlay("Settings",`<div class="space-y-3"><div class="p-4 rounded-2xl bg-[#f7f0eb]"><b>Account</b><p class="text-sm text-[var(--muted)] mt-1">${esc(user.email)}</p><p class="text-sm mt-1">Plan: <b>${plan.toUpperCase()}</b></p></div><button class="w-full p-4 rounded-2xl border border-[var(--line)] text-left" id="notifyBtn">🔔 Enable notifications</button><button class="w-full p-4 rounded-2xl border border-[var(--line)] text-left" id="testNotifyBtn">🧪 Send test notification</button><button class="w-full p-4 rounded-2xl border border-[var(--line)] text-left" id="deleteChats">🗑️ Delete local chat cache</button><p class="text-xs text-[var(--muted)]">Notifications use Firebase Cloud Messaging. The test button verifies that this signed-in account and device can receive FCM messages.</p><p class="text-xs text-[var(--muted)]">AURA stores conversations in your Firebase account and only loads a limited recent set to control database usage.</p></div>`);box.querySelector("#notifyBtn").onclick=enableNotifications;box.querySelector("#testNotifyBtn").onclick=sendTestNotification}
+function showInfo(){overlay("FAQ & About",`<div class="space-y-3 text-[16px] leading-7"><details open><summary class="font-bold cursor-pointer">What is AURA?</summary><p class="text-[var(--muted)]">AURA is a general AI assistant for conversation, writing, blogging, files, images, study and coding.</p></details><details><summary class="font-bold cursor-pointer">What can I upload?</summary><p class="text-[var(--muted)]">Images and common text/code files can be analyzed. Large files may be limited by the selected AI model.</p></details><details><summary class="font-bold cursor-pointer">What is Pro?</summary><p class="text-[var(--muted)]">Pro is $5 / ₦5,000 monthly and includes up to 10 image generations per day, subject to configured model availability.</p></details><details><summary class="font-bold cursor-pointer">Privacy</summary><p class="text-[var(--muted)]">Your account and saved chats are stored in Firebase. AI requests may be processed by the configured AI providers. Contact wytetechcompany@gmail.com for privacy/data requests.</p></details><div class="pt-3 border-t border-[var(--line)]"><b>AURA AI</b><p class="text-sm text-[var(--muted)]">By Wyte Tech Company · wytetechcompany@gmail.com</p></div></div>`)}
+function showBilling(){overlay("AURA Pro",`<div class="rounded-3xl bg-[#f2e0d8] p-5"><div class="text-sm text-[var(--accent2)] font-bold">PRO</div><div class="text-3xl font-black mt-1">$5 / ₦5,000</div><div class="text-[var(--muted)]">per month</div><ul class="mt-4 space-y-2 text-sm"><li>✓ Up to 10 image generations/day</li><li>✓ Better model routing when needed</li><li>✓ Higher capability limits</li><li>✓ Priority image features</li></ul><button id="payBtn" class="press mt-5 w-full h-12 rounded-2xl bg-[var(--accent)] text-white font-bold">Upgrade securely</button><p id="payNote" class="text-xs text-[var(--muted)] mt-3">Secure Flutterwave checkout • ₦5,000/month in Nigeria • $5/month internationally.</p></div>`).querySelector("#payBtn").onclick=startPayment}
+async function startPayment(){
+ if(typeof window.FlutterwaveCheckout!=="function")return notify("Secure checkout is still loading. Please try again in a moment.");
+ const publicKey=window.AURA_FLUTTERWAVE_PUBLIC_KEY;
+ if(!publicKey)return notify("The Pro checkout is temporarily unavailable. Please try again shortly.");
+ const isNigeria=(Intl.DateTimeFormat().resolvedOptions().locale||"").toUpperCase().includes("NG");
+ const currency=isNigeria?"NGN":"USD";
+ const amount=currency==="NGN"?5000:5;
+ const payBtn=document.getElementById("payBtn"),payNote=document.getElementById("payNote");
+ const resetBtn=()=>{if(payBtn){payBtn.disabled=false;payBtn.textContent="Upgrade securely"}};
+ if(payBtn){payBtn.disabled=true;payBtn.textContent="Opening secure checkout…"}
+ window.FlutterwaveCheckout({
+  public_key:publicKey,
+  tx_ref:`aura_${user.uid}_${Date.now()}`,
+  amount, currency,
+  payment_options:"card,mobilemoney,ussd,banktransfer",
+  customer:{email:user.email,name:user.displayName||user.email},
+  meta:{app:"aura",aura_user_id:user.uid,plan:"pro"},
+  customizations:{title:"AURA Pro",description:"AURA Pro monthly subscription",logo:location.origin+"/icon-512.png"},
+  callback:async response=>{
+   resetBtn();
+   if(response?.status!=="successful"&&response?.status!=="completed"){notify("Payment wasn't completed. No charge was made.");return;}
+   if(payNote)payNote.textContent="Verifying your payment…";
+   try{
+    await api("/verify-payment",{transaction_id:response.transaction_id});
+    await loadPlan();
+    notify("AURA Pro is now active. Enjoy!");
+    document.querySelector(".fixed.inset-0.z-\\[80\\]")?.remove();
+    render();
+   }catch(e){notify(friendly(e))}
+  },
+  onclose:resetBtn
+ });
+}
+let fcmReady=false; let fcmUnsubscribe=null;
+async function registerNotifications({askPermission=false,silent=false}={}){
+ try{
+  if(!user)return false;
+  if(!(await messagingSupported())){if(!silent)notify("Notifications aren't supported by this browser or device.");return false;}
+  if(!('Notification' in window)){if(!silent)notify("This browser does not provide notification permissions.");return false;}
+  let permission=Notification.permission;
+  if(permission!=="granted" && askPermission) permission=await Notification.requestPermission();
+  if(permission!=="granted"){if(!silent)notify("Notifications are still off. Allow them in your browser settings, then try again.");return false;}
+  const vapid=globalThis.AURA_FIREBASE_VAPID_KEY;
+  if(!vapid){if(!silent)notify("AURA is missing its Firebase notification key.");return false;}
+  const registration=swRegistration || await navigator.serviceWorker.ready;
+  const m=getMessaging(app);
+  const t=await getToken(m,{vapidKey:vapid,serviceWorkerRegistration:registration});
+  if(!t)throw Error("NO_TOKEN");
+  await api("/notifications",{action:"register",token:t,platform:"web",userAgent:navigator.userAgent});
+  if(fcmUnsubscribe)fcmUnsubscribe();
+  fcmUnsubscribe=onMessage(m,p=>{const n=p.notification||p.data||{};notify(n.body||"AURA has an update.");});
+  fcmReady=true;
+  if(!silent)notify("Notifications enabled. We'll keep this device registered.");
+  return true;
+ }catch(e){console.error("FCM registration failed",e);if(!silent)notify("AURA couldn't finish notification setup. Please try again from Settings.");return false;}
+}
+async function enableNotifications(){return registerNotifications({askPermission:true});}
+async function sendTestNotification(){try{const d=await api("/notifications",{action:"sendTest"});notify(d.sent?"Test notification sent. Check your notification shade.":"The test could not be delivered yet.");}catch(e){notify(friendly(e));}}
+
+let swRegistration=null;
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js",{scope:"/"}).then(r=>{swRegistration=r}).catch(e=>console.warn("Service worker registration failed",e));}
+onAuthStateChanged(auth,async u=>{user=u;if(!u){renderAuth();return}try{await saveUser();await loadPlan();await loadChats();setTimeout(()=>registerNotifications({askPermission:false,silent:true}),700)}catch(e){console.error(e);notify("Your account is signed in, but AURA couldn't load your chats. Please refresh.");await newChat(false)}});
+
+</script>
+</body></html>

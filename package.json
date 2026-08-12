@@ -1,12 +1,16 @@
 {
-  "name": "aura-backend",
-  "version": "1.0.0",
-  "description": "AURA AI Backend",
-  "main": "api/chat.js",
-  "dependencies": {
-    "groq-sdk": "^0.3.3"
+  "name": "aura-ai",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo AURA ready for Vercel"
   },
-  "engines": {
-    "node": "24.x"
+  "dependencies": {
+    "groq-sdk": "^0.3.3",
+    "firebase-admin": "^13.4.0",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.9.1"
   }
 }
