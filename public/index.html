@@ -8,11 +8,17 @@
 <meta name="robots" content="index,follow">
 <link rel="manifest" href="/manifest.json">
 <title>AURA AI — Your everyday AI</title>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+<link rel="preconnect" href="https://accounts.google.com">
+<link rel="preconnect" href="https://apis.google.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+<link rel="dns-prefetch" href="https://accounts.google.com">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://checkout.flutterwave.com/v3.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script defer src="https://unpkg.com/lucide@latest"></script>
+<script defer src="https://checkout.flutterwave.com/v3.js"></script>
 <script type="importmap">{"imports":{
 "firebase/app":"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
 "firebase/auth":"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
@@ -51,7 +57,7 @@ button,input,textarea{font:inherit}button{touch-action:manipulation}.safe{paddin
 <script src="/config.js"></script>
 <script type="module">
 import {initializeApp,getApps} from "firebase/app";
-import {getAuth,signInWithPopup,signInWithRedirect,getRedirectResult,GoogleAuthProvider,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "firebase/auth";
+import {getAuth,signInWithRedirect,getRedirectResult,GoogleAuthProvider,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "firebase/auth";
 import {getFirestore,collection,doc,getDoc,setDoc,addDoc,query,orderBy,limit,getDocs,deleteDoc,serverTimestamp} from "firebase/firestore";
 import {getMessaging,getToken,onMessage,isSupported as messagingSupported} from "firebase/messaging";
 
@@ -83,19 +89,27 @@ const friendly=e=>{
 
 function renderAuth(){
  appEl.innerHTML=document.getElementById("authTemplate").innerHTML; lucide.createIcons();
- document.getElementById("googleBtn").onclick=async()=>{
-  const b=document.getElementById("googleBtn");b.disabled=true;b.innerHTML="Opening secure Google sign-in…";
-  try{
-   await signInWithPopup(auth,google);
-  }catch(e){
-   const needsRedirect=["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/cancelled-popup-request"].includes(e?.code);
-   if(needsRedirect){
-    try{await signInWithRedirect(auth,google);return}catch(e2){document.getElementById("authError").textContent=friendly(e2);document.getElementById("authError").classList.remove("hidden")}
-   }else if(e?.code!=="auth/popup-closed-by-user"){
-    document.getElementById("authError").textContent=friendly(e);document.getElementById("authError").classList.remove("hidden");
-   }
-  }finally{b.disabled=false;b.innerHTML='<span class="text-lg">G</span> Continue with Google'}
- };
+ document.getElementById("googleBtn").onclick=()=>startGoogleSignIn();
+}
+// One single, simple sign-in path (redirect) instead of popup-with-redirect-fallback —
+// popups add a fragile postMessage handshake between windows that's the first thing to
+// break on a slow or flaky connection. A full-page redirect is one plain request/response,
+// which is far more reliable on bad networks even though it feels a touch slower.
+async function startGoogleSignIn(retrying=false){
+ const b=document.getElementById("googleBtn");
+ if(b){b.disabled=true;b.innerHTML=retrying?"Retrying…":"Opening secure Google sign-in…";}
+ try{
+  await signInWithRedirect(auth,google);
+ }catch(e){
+  if(!retrying&&/network-request-failed/i.test(e?.message||"")){
+   // Transient blips are common on cellular — one silent retry before bothering the user.
+   await new Promise(r=>setTimeout(r,1200));
+   return startGoogleSignIn(true);
+  }
+  const er=document.getElementById("authError");
+  if(er){er.textContent=friendly(e);er.classList.remove("hidden");}
+  if(b){b.disabled=false;b.innerHTML='<span class="text-lg">G</span> Continue with Google';}
+ }
 }
 
 async function token(){if(!user)throw Error("Please sign in first.");return user.getIdToken()};
