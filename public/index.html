@@ -51,14 +51,15 @@ button,input,textarea{font:inherit}button{touch-action:manipulation}.safe{paddin
 <script src="/config.js"></script>
 <script type="module">
 import {initializeApp,getApps} from "firebase/app";
-import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signInWithPopup,GoogleAuthProvider,sendPasswordResetEmail,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "firebase/auth";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signInWithPopup,signInWithRedirect,getRedirectResult,GoogleAuthProvider,sendPasswordResetEmail,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "firebase/auth";
 import {getFirestore,collection,doc,getDoc,setDoc,addDoc,query,orderBy,limit,getDocs,deleteDoc,serverTimestamp} from "firebase/firestore";
 import {getMessaging,getToken,onMessage,isSupported as messagingSupported} from "firebase/messaging";
 
 const firebaseConfig=window.AURA_FIREBASE_CONFIG;
 const app=!getApps().length?initializeApp(firebaseConfig):getApps()[0];
-const auth=getAuth(app); await setPersistence(auth,browserLocalPersistence);
+const auth=getAuth(app); auth.useDeviceLanguage(); await setPersistence(auth,browserLocalPersistence);
 const db=getFirestore(app); const google=new GoogleAuthProvider();
+google.setCustomParameters({prompt:"select_account"});
 const API="/api"; let user=null,currentChat=null,chats=[],busy=false,authMode="signup",plan="free";
 
 const appEl=document.getElementById("app");
@@ -87,7 +88,19 @@ function renderAuth(){
  update();
  mode.onclick=()=>{authMode=authMode==="signup"?"login":"signup";update();document.getElementById("authError").classList.add("hidden")};
  document.getElementById("forgotBtn").onclick=async()=>{const email=document.getElementById("email").value.trim();if(!email)return notify("Enter your email first.");try{await sendPasswordResetEmail(auth,email);notify("Password reset instructions are on their way.");}catch(e){notify(friendly(e),"error")}};
- document.getElementById("googleBtn").onclick=async()=>{const b=document.getElementById("googleBtn");b.disabled=true;b.textContent="Opening secure Google sign-in…";try{await signInWithPopup(auth,google)}catch(e){document.getElementById("authError").textContent=friendly(e);document.getElementById("authError").classList.remove("hidden")}finally{b.disabled=false;b.innerHTML='<span class="text-lg">G</span> Continue with Google'}};
+ document.getElementById("googleBtn").onclick=async()=>{
+  const b=document.getElementById("googleBtn");b.disabled=true;b.textContent="Opening secure Google sign-in…";
+  try{
+   await signInWithPopup(auth,google);
+  }catch(e){
+   const needsRedirect=["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/cancelled-popup-request"].includes(e?.code);
+   if(needsRedirect){
+    try{await signInWithRedirect(auth,google);return}catch(e2){document.getElementById("authError").textContent=friendly(e2);document.getElementById("authError").classList.remove("hidden")}
+   }else if(e?.code!=="auth/popup-closed-by-user"){
+    document.getElementById("authError").textContent=friendly(e);document.getElementById("authError").classList.remove("hidden");
+   }
+  }finally{b.disabled=false;b.innerHTML='<span class="text-lg">G</span> Continue with Google'}
+ };
  document.getElementById("authForm").onsubmit=async e=>{e.preventDefault();const er=document.getElementById("authError");er.classList.add("hidden");submit.disabled=true;submit.textContent=authMode==="signup"?"Creating…":"Signing in…";try{const email=document.getElementById("email").value.trim(),pass=document.getElementById("password").value;if(authMode==="signup"){if(pass!==document.getElementById("confirm").value)throw Error("Passwords do not match.");await createUserWithEmailAndPassword(auth,email,pass)}else await signInWithEmailAndPassword(auth,email,pass)}catch(x){er.textContent=friendly(x);er.classList.remove("hidden")}finally{submit.disabled=false;update()}};
 }
 
@@ -329,6 +342,7 @@ async function sendTestNotification(){try{const d=await api("/notifications",{ac
 
 let swRegistration=null;
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js",{scope:"/"}).then(r=>{swRegistration=r}).catch(e=>console.warn("Service worker registration failed",e));}
+getRedirectResult(auth).catch(e=>{if(e?.code!=="auth/no-current-user")console.error("Redirect sign-in failed:",e?.code,e?.message)});
 onAuthStateChanged(auth,async u=>{user=u;if(!u){renderAuth();return}try{await saveUser();await loadPlan();await loadChats();setTimeout(()=>registerNotifications({askPermission:false,silent:true}),700)}catch(e){console.error(e);notify("Your account is signed in, but AURA couldn't load your chats. Please refresh.");await newChat(false)}});
 
 </script>
